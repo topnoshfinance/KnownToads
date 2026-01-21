@@ -2,19 +2,13 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { Profile } from '@/types/profile';
 import { SocialLinks } from '@/components/profile/SocialLinks';
+import { SwapButton } from '@/components/ui/SwapButton';
 
 interface ToadCardProps {
   profile: Profile;
 }
 
 export function ToadCard({ profile }: ToadCardProps) {
-  const handleBuyClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    // TODO: Implement buy functionality - connect to swap API
-    console.log('Buy clicked for', profile.username);
-  };
-
   return (
     <Link href={`/toad/${profile.fid}`}>
       <div className="toad-card toad-card-compact animate-fadeIn" style={{ cursor: 'pointer' }}>
@@ -39,18 +33,18 @@ export function ToadCard({ profile }: ToadCardProps) {
             <div style={{ fontSize: 'var(--text-xs)' }}>
               <SocialLinks profile={profile} compactView={true} />
             </div>
-            <button
-              onClick={handleBuyClick}
-              className="btn-buy-compact"
+            <SwapButton
+              tokenAddress={profile.creator_coin_address}
+              chainId={profile.chain_id}
+              tokenSymbol={profile.username}
+              compactMode={true}
               style={{
                 marginTop: 'var(--spacing-xs)',
                 alignSelf: 'flex-start',
                 fontSize: 'var(--text-xs)',
                 padding: '0.15rem var(--spacing-sm)',
               }}
-            >
-              Buy 1USDC
-            </button>
+            />
           </div>
         </div>
       </div>
