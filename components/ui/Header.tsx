@@ -11,8 +11,8 @@ export function Header() {
     <header className="header">
       <Link href="/">
         <Image
-          src="/toby-logo.svg"
-          alt="Toby - Toadgang Mascot"
+          src="/IMG_20260121_143212.png"
+          alt="KnownToads App Logo"
           width={50}
           height={50}
           className="logo"

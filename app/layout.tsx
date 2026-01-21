@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   icons: {
     icon: '/favicon.svg',
     shortcut: '/favicon.svg',
-    apple: '/toby-logo.svg',
+    apple: '/IMG_20260121_143212.png',
   },
 };
 
