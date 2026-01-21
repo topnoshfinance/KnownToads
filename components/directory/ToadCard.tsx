@@ -36,14 +36,6 @@ export function ToadCard({ profile }: ToadCardProps) {
             flex: 1, 
             minWidth: 0  // Prevents flex item overflow for text truncation
           }}>
-            <h3 style={{ 
-              fontSize: 'var(--text-base)', 
-              color: 'var(--deep-blue)',
-              fontWeight: 'var(--font-bold)',
-              margin: 0,
-            }}>
-              {profile.username}
-            </h3>
             <div style={{ fontSize: 'var(--text-xs)' }}>
               <SocialLinks profile={profile} compactView={true} />
             </div>
