@@ -1,4 +1,60 @@
-<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="100" cy="100" r="90" fill="#4DB5FF"/>
-  <text x="100" y="130" font-size="80" text-anchor="middle" fill="white">🐸</text>
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Toby the Toad Mascot -->
+  <!-- Background circle for better visibility -->
+  <circle cx="100" cy="100" r="95" fill="#E6F7FF" opacity="0.3"/>
+  
+  <!-- Body (main toad shape) -->
+  <ellipse cx="100" cy="120" rx="70" ry="65" fill="#4DB5FF"/>
+  
+  <!-- Belly highlight -->
+  <ellipse cx="100" cy="130" rx="50" ry="45" fill="#E6F7FF" opacity="0.8"/>
+  
+  <!-- Left leg -->
+  <ellipse cx="65" cy="165" rx="20" ry="15" fill="#4DB5FF"/>
+  <ellipse cx="55" cy="172" rx="15" ry="12" fill="#4DB5FF"/>
+  
+  <!-- Right leg -->
+  <ellipse cx="135" cy="165" rx="20" ry="15" fill="#4DB5FF"/>
+  <ellipse cx="145" cy="172" rx="15" ry="12" fill="#4DB5FF"/>
+  
+  <!-- Left arm -->
+  <ellipse cx="50" cy="110" rx="15" ry="25" fill="#4DB5FF" transform="rotate(-20 50 110)"/>
+  
+  <!-- Right arm holding phone -->
+  <ellipse cx="150" cy="110" rx="15" ry="25" fill="#4DB5FF" transform="rotate(20 150 110)"/>
+  
+  <!-- Phone in right hand -->
+  <rect x="145" y="100" width="20" height="30" rx="3" fill="#2E5C8A"/>
+  <rect x="147" y="102" width="16" height="22" rx="2" fill="#87CEEB"/>
+  
+  <!-- Head (upper part of body) -->
+  <ellipse cx="100" cy="80" rx="60" ry="50" fill="#4DB5FF"/>
+  
+  <!-- Left eye (big and friendly) -->
+  <ellipse cx="80" cy="75" rx="18" ry="22" fill="white"/>
+  <ellipse cx="80" cy="75" rx="15" ry="19" fill="white"/>
+  <circle cx="82" cy="77" r="10" fill="#2E5C8A"/>
+  <circle cx="84" cy="75" r="5" fill="black"/>
+  <circle cx="86" cy="73" r="2" fill="white"/>
+  
+  <!-- Right eye (big and friendly) -->
+  <ellipse cx="120" cy="75" rx="18" ry="22" fill="white"/>
+  <ellipse cx="120" cy="75" rx="15" ry="19" fill="white"/>
+  <circle cx="122" cy="77" r="10" fill="#2E5C8A"/>
+  <circle cx="124" cy="75" r="5" fill="black"/>
+  <circle cx="126" cy="73" r="2" fill="white"/>
+  
+  <!-- Mustache -->
+  <path d="M 70 95 Q 85 90 100 92 Q 115 90 130 95" stroke="#2E5C8A" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <ellipse cx="70" cy="95" rx="8" ry="5" fill="#2E5C8A" transform="rotate(-15 70 95)"/>
+  <ellipse cx="130" cy="95" rx="8" ry="5" fill="#2E5C8A" transform="rotate(15 130 95)"/>
+  
+  <!-- Mouth (friendly smile) -->
+  <path d="M 85 100 Q 100 108 115 100" stroke="#2E5C8A" stroke-width="2" fill="none" stroke-linecap="round"/>
+  
+  <!-- Purple accent spots -->
+  <ellipse cx="65" cy="70" rx="12" ry="10" fill="#8B7AB8" opacity="0.6"/>
+  <ellipse cx="135" cy="70" rx="12" ry="10" fill="#8B7AB8" opacity="0.6"/>
+  <ellipse cx="50" cy="95" rx="8" ry="7" fill="#8B7AB8" opacity="0.5"/>
+  <ellipse cx="150" cy="95" rx="8" ry="7" fill="#8B7AB8" opacity="0.5"/>
 </svg>
