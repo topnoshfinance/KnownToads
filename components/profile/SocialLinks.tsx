@@ -3,7 +3,7 @@ import { WarningIcon } from '../ui/WarningIcon';
 import type { Profile } from '@/types/profile';
 
 interface SocialLink {
-  platform: 'x' | 'telegram' | 'zora';
+  platform: 'x' | 'telegram' | 'zora' | 'farcaster';
   handle?: string;
   url?: string;
   valid?: boolean;
@@ -17,6 +17,7 @@ interface SocialLinksProps {
   telegramHandleValid?: boolean;
   zoraPageUrl?: string | null;
   zoraPageValid?: boolean;
+  compactView?: boolean; // New prop for directory view
 }
 
 export function SocialLinks({
@@ -27,6 +28,7 @@ export function SocialLinks({
   telegramHandleValid = true,
   zoraPageUrl,
   zoraPageValid = true,
+  compactView = false, // Default to false for detail views
 }: SocialLinksProps) {
   const links: SocialLink[] = [];
 
@@ -37,6 +39,16 @@ export function SocialLinks({
   const telegramValid = profile?.telegram_handle_valid !== undefined ? profile.telegram_handle_valid : telegramHandleValid;
   const zora = profile?.zora_page_url || zoraPageUrl;
   const zoraValid = profile?.zora_page_valid !== undefined ? profile.zora_page_valid : zoraPageValid;
+
+  // Add Farcaster username (always shown with @username in both views)
+  if (profile?.username) {
+    links.push({
+      platform: 'farcaster',
+      handle: profile.username,
+      url: `https://warpcast.com/${profile.username}`,
+      valid: true,
+    });
+  }
 
   if (x) {
     links.push({
@@ -68,6 +80,49 @@ export function SocialLinks({
     return <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-sm)' }}>No social links added</p>;
   }
 
+  // Compact view for directory (emojis side by side)
+  if (compactView) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xs)' }}>
+        {/* Farcaster username on its own line */}
+        {links.find(l => l.platform === 'farcaster') && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-xs)' }}>
+            <a
+              href={links.find(l => l.platform === 'farcaster')?.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="social-link"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--spacing-xs)', fontSize: 'var(--text-xs)' }}
+            >
+              <span style={{ fontSize: 'var(--text-sm)' }}>🎭</span>
+              <span>@{links.find(l => l.platform === 'farcaster')?.handle}</span>
+            </a>
+          </div>
+        )}
+        {/* Other platforms as emojis only, side by side */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+          {links.filter(l => l.platform !== 'farcaster').map((link) => (
+            <a
+              key={link.platform}
+              href={link.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="social-link"
+              title={link.handle ? `@${link.handle}` : link.platform}
+              style={{ display: 'inline-flex', alignItems: 'center', fontSize: 'var(--text-base)' }}
+            >
+              {link.platform === 'x' && <span>🐦</span>}
+              {link.platform === 'telegram' && <span>💬</span>}
+              {link.platform === 'zora' && <span>🎨</span>}
+              {!link.valid && <WarningIcon title="This link may be broken or invalid" />}
+            </a>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Full view for detail pages (show all usernames)
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xs)' }}>
       {links.map((link) => (
@@ -79,6 +134,7 @@ export function SocialLinks({
             className="social-link"
             style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--spacing-xs)', fontSize: 'var(--text-sm)' }}
           >
+            {link.platform === 'farcaster' && <span style={{ fontSize: 'var(--text-base)' }}>🎭</span>}
             {link.platform === 'x' && <span style={{ fontSize: 'var(--text-base)' }}>🐦</span>}
             {link.platform === 'telegram' && <span style={{ fontSize: 'var(--text-base)' }}>💬</span>}
             {link.platform === 'zora' && <span style={{ fontSize: 'var(--text-base)' }}>🎨</span>}

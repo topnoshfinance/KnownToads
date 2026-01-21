@@ -23,8 +23,8 @@ export function ToadCard({ profile }: ToadCardProps) {
             <Image
               src={profile.pfp_url}
               alt={`${profile.username}'s profile`}
-              width={60}
-              height={60}
+              width={50}
+              height={50}
               className="avatar avatar-compact"
               style={{ objectFit: 'cover', flexShrink: 0 }}
             />
@@ -37,15 +37,15 @@ export function ToadCard({ profile }: ToadCardProps) {
             minWidth: 0  // Prevents flex item overflow for text truncation
           }}>
             <h3 style={{ 
-              fontSize: 'var(--text-lg)', 
+              fontSize: 'var(--text-base)', 
               color: 'var(--deep-blue)',
               fontWeight: 'var(--font-bold)',
               margin: 0,
             }}>
               {profile.username}
             </h3>
-            <div style={{ fontSize: 'var(--text-sm)' }}>
-              <SocialLinks profile={profile} />
+            <div style={{ fontSize: 'var(--text-xs)' }}>
+              <SocialLinks profile={profile} compactView={true} />
             </div>
             <button
               onClick={handleBuyClick}
@@ -53,6 +53,8 @@ export function ToadCard({ profile }: ToadCardProps) {
               style={{
                 marginTop: 'var(--spacing-xs)',
                 alignSelf: 'flex-start',
+                fontSize: 'var(--text-xs)',
+                padding: '0.15rem var(--spacing-sm)',
               }}
             >
               Buy 1USDC

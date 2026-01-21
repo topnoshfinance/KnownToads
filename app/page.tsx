@@ -77,7 +77,7 @@ export default function HomePage() {
             color: 'var(--deep-blue)',
             marginBottom: 'var(--spacing-md)',
           }}>
-            🐸 KnownToads
+            KnownToads
           </h1>
           <p style={{ 
             fontSize: 'var(--text-xl)', 
@@ -133,7 +133,7 @@ export default function HomePage() {
           marginTop: 'var(--spacing-2xl)',
           color: 'var(--text-secondary)',
         }}>
-          <p>Built for the toadgang community 🐸</p>
+          <p>Built for the toadgang community</p>
           <p style={{ fontSize: 'var(--text-sm)', marginTop: 'var(--spacing-sm)' }}>
             Follow{' '}
             <a
