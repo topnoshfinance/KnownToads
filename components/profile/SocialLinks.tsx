@@ -17,6 +17,7 @@ interface SocialLinksProps {
   telegramHandleValid?: boolean;
   zoraPageUrl?: string | null;
   zoraPageValid?: boolean;
+  showDirectoryView?: boolean;
 }
 
 export function SocialLinks({
@@ -27,6 +28,7 @@ export function SocialLinks({
   telegramHandleValid = true,
   zoraPageUrl,
   zoraPageValid = true,
+  showDirectoryView = false,
 }: SocialLinksProps) {
   const links: SocialLink[] = [];
 
@@ -69,7 +71,7 @@ export function SocialLinks({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-sm)' }}>
+    <div style={{ display: 'flex', flexDirection: showDirectoryView ? 'row' : 'column', gap: 'var(--spacing-sm)', justifyContent: showDirectoryView ? 'center' : 'flex-start' }}>
       {links.map((link) => (
         <div key={link.platform} style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
           <a
@@ -82,10 +84,10 @@ export function SocialLinks({
             {link.platform === 'x' && <span style={{ fontSize: 'var(--text-xl)' }}>🐦</span>}
             {link.platform === 'telegram' && <span style={{ fontSize: 'var(--text-xl)' }}>💬</span>}
             {link.platform === 'zora' && <span style={{ fontSize: 'var(--text-xl)' }}>🎨</span>}
-            <span>{link.handle ? `@${link.handle}` : 'Zora'}</span>
+            {!showDirectoryView && <span>{link.handle ? `@${link.handle}` : 'Zora'}</span>}
           </a>
           
-          {!link.valid && (
+          {!link.valid && !showDirectoryView && (
             <WarningIcon title="This link may be broken or invalid" />
           )}
         </div>
