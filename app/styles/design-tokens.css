@@ -1,0 +1,68 @@
+:root {
+  /* Primary Colors */
+  --toby-blue: #4DB5FF;
+  --sky-blue: #87CEEB;
+  --ice-blue: #E6F7FF;
+  --deep-blue: #2E5C8A;
+  --purple-accent: #8B7AB8;
+
+  /* Supporting Colors */
+  --black: #000000;
+  --white: #FFFFFF;
+  --mint: #B8F5E6;
+
+  /* Semantic Colors */
+  --primary: var(--toby-blue);
+  --primary-hover: var(--purple-accent);
+  --secondary: var(--deep-blue);
+  --background: linear-gradient(135deg, var(--ice-blue) 0%, var(--white) 100%);
+  --card-background: rgba(255, 255, 255, 0.8);
+  --border: var(--toby-blue);
+  --text-primary: var(--black);
+  --text-secondary: var(--deep-blue);
+
+  /* Effects */
+  --shadow-sm: 0 2px 8px rgba(77, 181, 255, 0.15);
+  --shadow-md: 0 4px 16px rgba(77, 181, 255, 0.25);
+  --shadow-lg: 0 8px 32px rgba(77, 181, 255, 0.35);
+  --glow: 0 0 20px rgba(77, 181, 255, 0.4);
+
+  /* Typography */
+  --font-heading: 'Poppins', 'Inter', -apple-system, sans-serif;
+  --font-body: 'Inter', -apple-system, sans-serif;
+
+  /* Type Scale */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+
+  /* Font Weights */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+
+  /* Border Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.3s ease;
+  --transition-slow: 0.5s ease;
+}

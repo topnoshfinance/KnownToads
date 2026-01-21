@@ -8,6 +8,8 @@ import { Profile } from '@/types/profile';
 import { supabase } from '@/lib/supabase';
 import { SocialLinks } from '@/components/profile/SocialLinks';
 import { Button } from '@/components/ui/Button';
+import { Header } from '@/components/ui/Header';
+import { Loading } from '@/components/ui/Loading';
 
 export default function ToadCardPage() {
   const params = useParams();
@@ -58,17 +60,26 @@ export default function ToadCardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-green-50 to-green-100 flex items-center justify-center">
-        <p className="text-gray-600 text-lg">Loading toad... 🐸</p>
+      <div style={{ minHeight: '100vh' }}>
+        <Header />
+        <Loading />
       </div>
     );
   }
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-green-50 to-green-100 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600 text-lg mb-4">Toad not found 🐸</p>
+      <div style={{ minHeight: '100vh' }}>
+        <Header />
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '50vh',
+          gap: 'var(--spacing-lg)',
+        }}>
+          <p style={{ fontSize: 'var(--text-xl)', color: 'var(--text-secondary)' }}>Toad not found 🐸</p>
           <Link href="/">
             <Button>Back to Directory</Button>
           </Link>
@@ -78,34 +89,46 @@ export default function ToadCardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-50 to-green-100">
-      <div className="max-w-3xl mx-auto px-4 py-8">
-        <Link href="/">
-          <Button variant="secondary" className="mb-6">
-            ← Back to Directory
-          </Button>
-        </Link>
-
-        <div className="bg-white rounded-lg shadow-lg p-8">
+    <div style={{ minHeight: '100vh' }}>
+      <Header />
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: 'var(--spacing-xl)' }}>
+        <div className="toad-card" style={{ padding: 'var(--spacing-2xl)' }}>
           {/* Profile Header */}
-          <div className="flex flex-col items-center mb-8">
-            <div className="relative w-32 h-32 rounded-full overflow-hidden mb-4 border-4 border-green-500">
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center', 
+            marginBottom: 'var(--spacing-xl)',
+          }}>
+            {profile.pfp_url && (
               <Image
                 src={profile.pfp_url}
-                alt={`${profile.username}'s profile picture`}
-                fill
-                className="object-cover"
+                alt={`${profile.username}'s profile`}
+                width={200}
+                height={200}
+                className="avatar avatar-lg"
+                style={{ objectFit: 'cover', marginBottom: 'var(--spacing-md)' }}
               />
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            )}
+            <h1 style={{ 
+              fontSize: 'var(--text-3xl)', 
+              fontWeight: 'var(--font-bold)',
+              color: 'var(--deep-blue)',
+              marginBottom: 'var(--spacing-sm)',
+            }}>
               @{profile.username}
             </h1>
-            <p className="text-gray-600">FID: {profile.fid}</p>
+            <p style={{ color: 'var(--text-secondary)' }}>FID: {profile.fid}</p>
           </div>
 
           {/* Social Links */}
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          <div style={{ marginBottom: 'var(--spacing-xl)' }}>
+            <h2 style={{ 
+              fontSize: 'var(--text-2xl)', 
+              fontWeight: 'var(--font-semibold)',
+              color: 'var(--deep-blue)',
+              marginBottom: 'var(--spacing-md)',
+            }}>
               Social Links
             </h2>
             <SocialLinks
@@ -119,29 +142,48 @@ export default function ToadCardPage() {
           </div>
 
           {/* Creator Coin */}
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          <div style={{ marginBottom: 'var(--spacing-xl)' }}>
+            <h2 style={{ 
+              fontSize: 'var(--text-2xl)', 
+              fontWeight: 'var(--font-semibold)',
+              color: 'var(--deep-blue)',
+              marginBottom: 'var(--spacing-md)',
+            }}>
               Creator Coin
             </h2>
-            <div className="bg-gray-50 rounded-lg p-4 mb-4">
-              <p className="text-sm text-gray-600 mb-2">Contract Address</p>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 text-sm font-mono bg-white px-3 py-2 rounded border break-all">
+            <div className="info-card" style={{ marginBottom: 'var(--spacing-md)' }}>
+              <p style={{ 
+                fontSize: 'var(--text-sm)', 
+                color: 'var(--text-secondary)',
+                marginBottom: 'var(--spacing-sm)',
+              }}>
+                Contract Address
+              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
+                <code style={{ 
+                  flex: 1,
+                  fontSize: 'var(--text-sm)',
+                  fontFamily: 'monospace',
+                  background: 'var(--white)',
+                  padding: 'var(--spacing-sm) var(--spacing-md)',
+                  borderRadius: 'var(--radius-sm)',
+                  border: '1px solid var(--toby-blue)',
+                  wordBreak: 'break-all',
+                }}>
                   {profile.creator_coin_address}
                 </code>
-                <Button size="sm" onClick={handleCopyAddress}>
+                <Button onClick={handleCopyAddress} style={{ padding: 'var(--spacing-sm) var(--spacing-md)', fontSize: 'var(--text-sm)' }}>
                   {copied ? '✓' : 'Copy'}
                 </Button>
               </div>
               {profile.chain_id !== 8453 && (
-                <p className="text-sm text-yellow-600 mt-2">
+                <p style={{ fontSize: 'var(--text-sm)', color: '#eab308', marginTop: 'var(--spacing-sm)' }}>
                   ⚠️ Chain ID: {profile.chain_id} (not Base)
                 </p>
               )}
             </div>
             <Button
-              size="lg"
-              className="w-full"
+              style={{ width: '100%' }}
               onClick={handleBuyClick}
             >
               Buy 1 USDC Worth
@@ -149,7 +191,12 @@ export default function ToadCardPage() {
           </div>
 
           {/* Metadata */}
-          <div className="text-sm text-gray-500 pt-4 border-t">
+          <div style={{ 
+            fontSize: 'var(--text-sm)', 
+            color: 'var(--text-secondary)',
+            paddingTop: 'var(--spacing-md)',
+            borderTop: '1px solid var(--toby-blue)',
+          }}>
             <p>Joined: {new Date(profile.created_at).toLocaleDateString()}</p>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { WarningIcon } from '../ui/WarningIcon';
+import type { Profile } from '@/types/profile';
 
 interface SocialLink {
   platform: 'x' | 'telegram' | 'zora';
@@ -9,6 +10,7 @@ interface SocialLink {
 }
 
 interface SocialLinksProps {
+  profile?: Profile;
   xHandle?: string | null;
   xHandleValid?: boolean;
   telegramHandle?: string | null;
@@ -18,6 +20,7 @@ interface SocialLinksProps {
 }
 
 export function SocialLinks({
+  profile,
   xHandle,
   xHandleValid = true,
   telegramHandle,
@@ -27,49 +30,57 @@ export function SocialLinks({
 }: SocialLinksProps) {
   const links: SocialLink[] = [];
 
-  if (xHandle) {
+  // Use profile prop if provided, otherwise use individual props
+  const x = profile?.x_handle || xHandle;
+  const xValid = profile?.x_handle_valid !== undefined ? profile.x_handle_valid : xHandleValid;
+  const telegram = profile?.telegram_handle || telegramHandle;
+  const telegramValid = profile?.telegram_handle_valid !== undefined ? profile.telegram_handle_valid : telegramHandleValid;
+  const zora = profile?.zora_page_url || zoraPageUrl;
+  const zoraValid = profile?.zora_page_valid !== undefined ? profile.zora_page_valid : zoraPageValid;
+
+  if (x) {
     links.push({
       platform: 'x',
-      handle: xHandle,
-      url: `https://x.com/${xHandle}`,
-      valid: xHandleValid,
+      handle: x,
+      url: `https://x.com/${x}`,
+      valid: xValid,
     });
   }
 
-  if (telegramHandle) {
+  if (telegram) {
     links.push({
       platform: 'telegram',
-      handle: telegramHandle,
-      url: `https://t.me/${telegramHandle}`,
-      valid: telegramHandleValid,
+      handle: telegram,
+      url: `https://t.me/${telegram}`,
+      valid: telegramValid,
     });
   }
 
-  if (zoraPageUrl) {
+  if (zora) {
     links.push({
       platform: 'zora',
-      url: zoraPageUrl,
-      valid: zoraPageValid,
+      url: zora,
+      valid: zoraValid,
     });
   }
 
   if (links.length === 0) {
-    return <p className="text-gray-500 text-sm">No social links added</p>;
+    return <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-sm)' }}>No social links added</p>;
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-sm)' }}>
       {links.map((link) => (
-        <div key={link.platform} className="flex items-center gap-2">
-          {link.platform === 'x' && <span className="text-xl">🐦</span>}
-          {link.platform === 'telegram' && <span className="text-xl">💬</span>}
-          {link.platform === 'zora' && <span className="text-xl">🎨</span>}
+        <div key={link.platform} style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+          {link.platform === 'x' && <span style={{ fontSize: 'var(--text-xl)' }}>🐦</span>}
+          {link.platform === 'telegram' && <span style={{ fontSize: 'var(--text-xl)' }}>💬</span>}
+          {link.platform === 'zora' && <span style={{ fontSize: 'var(--text-xl)' }}>🎨</span>}
           
           <a
             href={link.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-green-600 hover:text-green-700 underline"
+            className="social-link"
           >
             {link.handle ? `@${link.handle}` : 'Zora'}
           </a>
