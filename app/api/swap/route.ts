@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// USDC on Base
+const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+const SWAP_BASE_URL = 'https://swap.defillama.com/';
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -51,11 +55,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // USDC on Base
-    const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
-
     // Generate DefiLlama swap URL
-    const swapUrl = `https://swap.defillama.com/?chain=base&from=${USDC_ADDRESS}&to=${tokenAddress}&amount=${amountUSD}`;
+    const swapUrl = `${SWAP_BASE_URL}?chain=base&from=${USDC_ADDRESS}&to=${tokenAddress}&amount=${amountUSD}`;
 
     return NextResponse.json({
       swapUrl,

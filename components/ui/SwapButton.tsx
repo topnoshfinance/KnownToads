@@ -120,7 +120,7 @@ export function SwapButton({
           style={style}
           disabled={loading}
         >
-          {loading ? 'Loading...' : 'Buy 1USDC'}
+          {loading ? 'Loading...' : 'Buy 1 USDC'}
         </button>
         {error && (
           <p style={{ 
@@ -178,6 +178,7 @@ export function SwapButton({
             <button
               key={amount}
               onClick={(e) => handleAmountSelect(e, amount)}
+              className="swap-dropdown-option"
               style={{
                 width: '100%',
                 padding: 'var(--spacing-md)',
@@ -190,13 +191,6 @@ export function SwapButton({
                 cursor: 'pointer',
                 transition: 'all var(--transition-fast)',
                 textAlign: 'left',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'var(--ice-blue)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 
-                  selectedAmount === amount ? 'var(--ice-blue)' : 'transparent';
               }}
             >
               {amount} USDC

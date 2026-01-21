@@ -180,3 +180,8 @@
 .logo:hover {
   animation: bounce 0.6s ease;
 }
+
+/* Swap Dropdown */
+.swap-dropdown-option:hover {
+  background: var(--ice-blue) !important;
+}
