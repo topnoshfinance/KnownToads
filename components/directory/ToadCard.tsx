@@ -11,7 +11,7 @@ export function ToadCard({ profile }: ToadCardProps) {
   const handleBuyClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    // Placeholder for buy functionality
+    // TODO: Implement buy functionality - connect to swap API
     console.log('Buy clicked for', profile.username);
   };
 
@@ -29,7 +29,13 @@ export function ToadCard({ profile }: ToadCardProps) {
               style={{ objectFit: 'cover', flexShrink: 0 }}
             />
           )}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xs)', flex: 1, minWidth: 0 }}>
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: 'var(--spacing-xs)', 
+            flex: 1, 
+            minWidth: 0  // Prevents flex item overflow for text truncation
+          }}>
             <h3 style={{ 
               fontSize: 'var(--text-lg)', 
               color: 'var(--deep-blue)',
