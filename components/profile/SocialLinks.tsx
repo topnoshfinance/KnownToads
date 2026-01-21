@@ -69,19 +69,19 @@ export function SocialLinks({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-sm)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xs)' }}>
       {links.map((link) => (
-        <div key={link.platform} style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+        <div key={link.platform} style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-xs)' }}>
           <a
             href={link.url}
             target="_blank"
             rel="noopener noreferrer"
             className="social-link"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--spacing-xs)', fontSize: 'var(--text-sm)' }}
           >
-            {link.platform === 'x' && <span style={{ fontSize: 'var(--text-xl)' }}>🐦</span>}
-            {link.platform === 'telegram' && <span style={{ fontSize: 'var(--text-xl)' }}>💬</span>}
-            {link.platform === 'zora' && <span style={{ fontSize: 'var(--text-xl)' }}>🎨</span>}
+            {link.platform === 'x' && <span style={{ fontSize: 'var(--text-base)' }}>🐦</span>}
+            {link.platform === 'telegram' && <span style={{ fontSize: 'var(--text-base)' }}>💬</span>}
+            {link.platform === 'zora' && <span style={{ fontSize: 'var(--text-base)' }}>🎨</span>}
             <span>{link.handle ? `@${link.handle}` : 'Zora'}</span>
           </a>
           
