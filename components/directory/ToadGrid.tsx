@@ -14,10 +14,10 @@ export function ToadGrid({ profiles }: ToadGridProps) {
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+      gridTemplateColumns: '1fr',
       gap: 'var(--spacing-xl)',
-      padding: 'var(--spacing-md)',
-      maxWidth: '1400px',
+      padding: 'var(--spacing-md) var(--spacing-sm)',
+      maxWidth: '600px',
       margin: '0 auto',
     }}>
       {profiles.map((profile) => (
