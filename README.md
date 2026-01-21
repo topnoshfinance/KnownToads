@@ -28,7 +28,8 @@ A Farcaster mini app that serves as a community directory where toadgang members
 
 - Node.js 18+ and npm
 - A Supabase account and project
-- A Farcaster account and API key (optional for full functionality)
+- A Farcaster account
+- (Optional) A Farcaster API key for follower verification
 
 ### Installation
 
@@ -63,14 +64,34 @@ A Farcaster mini app that serves as a community directory where toadgang members
    - `TOADGOD_FID` - The FID of @toadgod1017
    - `BASE_RPC_URL` - Base RPC endpoint (default: https://mainnet.base.org)
 
-5. **Run the development server**
+5. **Add required images**
+   
+   Add the following images to the `public/` directory:
+   - `logo.png` - App icon (512x512px recommended)
+   - `splash.png` - Splash screen (1080x1920px recommended)
+   - `og-image.png` - Social sharing image (1200x630px recommended)
+
+6. **Update manifest URLs**
+   
+   Edit `public/.well-known/farcaster.json` and replace `knowntoads.vercel.app` with your actual domain.
+
+7. **Run the development server**
    ```bash
    npm run dev
    ```
 
-6. **Open your browser**
+8. **Open your browser**
    
    Navigate to [http://localhost:3000](http://localhost:3000)
+
+### Testing as a Farcaster Mini App
+
+To test your app as a Farcaster mini app:
+
+1. Deploy to a public URL (e.g., Vercel)
+2. Ensure the manifest is accessible at `https://yourdomain.com/.well-known/farcaster.json`
+3. Open the URL in a Farcaster client (Warpcast mobile app)
+4. The app will load with Frame SDK context available
 
 ## Project Structure
 
@@ -115,6 +136,17 @@ The app uses a single `profiles` table with the following structure:
 See `supabase-schema.sql` for the complete schema with indexes and RLS policies.
 
 ## Key Features Explained
+
+### Farcaster Mini App Integration
+
+This app is built as a proper Farcaster mini app following the official specifications:
+
+- **Frame SDK**: Uses `@farcaster/frame-sdk` for proper mini app initialization
+- **Manifest File**: Provides app metadata at `/.well-known/farcaster.json`
+- **Wagmi Integration**: Uses `@farcaster/frame-wagmi-connector` for wallet connections
+- **Context Access**: Retrieves user FID, username, and PFP from Frame SDK context
+- **Ready Signal**: Calls `sdk.actions.ready()` to signal app is loaded
+- **Back Navigation**: Enables web navigation with `sdk.back.enableWebNavigation()`
 
 ### Farcaster Authentication
 
