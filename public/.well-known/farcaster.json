@@ -1,0 +1,20 @@
+{
+  "miniapp": {
+    "version": "1",
+    "name": "KnownToads",
+    "iconUrl": "https://knowntoads.vercel.app/logo.png",
+    "homeUrl": "https://knowntoads.vercel.app",
+    "imageUrl": "https://knowntoads.vercel.app/og-image.png",
+    "buttonTitle": "🐸 Join the Gang",
+    "splashImageUrl": "https://knowntoads.vercel.app/splash.png",
+    "splashBackgroundColor": "#dcfce7",
+    "requiredChains": [
+      "eip155:8453"
+    ],
+    "requiredCapabilities": [
+      "actions.signIn",
+      "wallet.getEthereumProvider",
+      "actions.swapToken"
+    ]
+  }
+}
