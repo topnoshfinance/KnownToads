@@ -11,7 +11,7 @@ export function SearchBar({ value, onChange, placeholder = 'Search toads...' }: 
     <div style={{
       display: 'flex',
       justifyContent: 'center',
-      padding: 'var(--spacing-xl)',
+      padding: 'var(--spacing-sm) var(--spacing-md)',
       width: '100%',
     }}>
       <div style={{ position: 'relative', width: '100%', maxWidth: '600px' }}>

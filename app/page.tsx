@@ -70,7 +70,7 @@ export default function HomePage() {
       <Header />
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: 'var(--spacing-xl)' }}>
         {/* Hero Section */}
-        <div style={{ textAlign: 'center', marginBottom: 'var(--spacing-2xl)' }}>
+        <div style={{ textAlign: 'center', marginBottom: 'var(--spacing-sm)' }}>
           <h1 style={{ 
             fontSize: 'var(--text-4xl)', 
             fontWeight: 'var(--font-bold)',
@@ -92,7 +92,7 @@ export default function HomePage() {
         </div>
 
         {/* Search and Filter */}
-        <div style={{ marginBottom: 'var(--spacing-xl)' }}>
+        <div style={{ marginBottom: 'var(--spacing-md)' }}>
           <SearchBar
             value={searchQuery}
             onChange={setSearchQuery}
@@ -102,7 +102,7 @@ export default function HomePage() {
             display: 'flex', 
             justifyContent: 'center',
             gap: 'var(--spacing-md)',
-            marginTop: 'var(--spacing-md)',
+            marginTop: 'var(--spacing-sm)',
           }}>
             <Button
               variant={sortBy === 'newest' ? 'primary' : 'secondary'}
