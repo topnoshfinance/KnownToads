@@ -11,7 +11,7 @@ export function Loading() {
       gap: 'var(--spacing-lg)',
     }}>
       <Image
-        src="/toby-logo.svg"
+        src="/IMG_20260121_143212.png"
         alt="Loading..."
         width={100}
         height={100}

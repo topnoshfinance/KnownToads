@@ -16,7 +16,7 @@ export function EmptyState({ message = 'No toads found' }: EmptyStateProps) {
       opacity: 0.7,
     }}>
       <Image
-        src="/toby-logo.svg"
+        src="/IMG_20260121_143212.png"
         alt="No results"
         width={120}
         height={120}
