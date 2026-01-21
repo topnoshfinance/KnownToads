@@ -8,6 +8,7 @@ import { Profile } from '@/types/profile';
 import { supabase } from '@/lib/supabase';
 import { SocialLinks } from '@/components/profile/SocialLinks';
 import { Button } from '@/components/ui/Button';
+import { SwapButton } from '@/components/ui/SwapButton';
 import { Header } from '@/components/ui/Header';
 import { Loading } from '@/components/ui/Loading';
 
@@ -48,14 +49,6 @@ export default function ToadCardPage() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
-  }
-
-  async function handleBuyClick() {
-    if (!profile) return;
-    
-    // In a real implementation, this would trigger a Farcaster Frame
-    // For now, we'll just show an alert
-    alert('This will trigger a Farcaster native swap for 1 USDC worth of the creator coin');
   }
 
   if (loading) {
@@ -182,12 +175,12 @@ export default function ToadCardPage() {
                 </p>
               )}
             </div>
-            <Button
+            <SwapButton
+              tokenAddress={profile.creator_coin_address}
+              chainId={profile.chain_id}
+              tokenSymbol={profile.username}
               style={{ width: '100%' }}
-              onClick={handleBuyClick}
-            >
-              Buy 1 USDC Worth
-            </Button>
+            />
           </div>
 
           {/* Metadata */}
