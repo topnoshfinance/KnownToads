@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-// USDC on Base
-const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
-const SWAP_BASE_URL = 'https://swap.defillama.com/';
+import {
+  USDC_ADDRESS,
+  SWAP_BASE_URL,
+  isValidTokenAddress,
+  isValidChainId,
+  isValidSwapAmount,
+} from '@/lib/swap-constants';
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,7 +35,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate chain ID is Base
-    if (chainId !== 8453) {
+    if (!isValidChainId(chainId)) {
       return NextResponse.json(
         { error: 'Only Base chain (8453) is supported' },
         { status: 400 }
@@ -40,7 +43,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate token address format
-    if (!/^0x[a-fA-F0-9]{40}$/.test(tokenAddress)) {
+    if (!isValidTokenAddress(tokenAddress)) {
       return NextResponse.json(
         { error: 'Invalid token address format' },
         { status: 400 }
@@ -48,7 +51,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate amount is valid
-    if (![1, 5, 10].includes(amountUSD)) {
+    if (!isValidSwapAmount(amountUSD)) {
       return NextResponse.json(
         { error: 'Amount must be 1, 5, or 10 USDC' },
         { status: 400 }

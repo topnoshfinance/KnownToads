@@ -2,6 +2,11 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import sdk from '@farcaster/frame-sdk';
+import { 
+  SWAP_AMOUNTS, 
+  isValidTokenAddress, 
+  isValidChainId 
+} from '@/lib/swap-constants';
 
 interface SwapButtonProps {
   tokenAddress: string;
@@ -26,7 +31,7 @@ export function SwapButton({
   const [error, setError] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const amounts = [1, 5, 10];
+  const amounts = [...SWAP_AMOUNTS];
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -50,12 +55,12 @@ export function SwapButton({
 
     try {
       // Validate chain ID
-      if (chainId !== 8453) {
+      if (!isValidChainId(chainId)) {
         throw new Error('Only Base chain (8453) is supported');
       }
 
       // Validate token address format
-      if (!/^0x[a-fA-F0-9]{40}$/.test(tokenAddress)) {
+      if (!isValidTokenAddress(tokenAddress)) {
         throw new Error('Invalid token address format');
       }
 
