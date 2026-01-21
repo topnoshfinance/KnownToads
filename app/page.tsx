@@ -75,7 +75,7 @@ export default function HomePage() {
             The Toadgang Community Directory
           </p>
           <Link href="/profile/edit">
-            <Button size="lg">Join the Gang</Button>
+            <Button>Join the Gang</Button>
           </Link>
         </div>
 

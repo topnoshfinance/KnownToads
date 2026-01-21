@@ -133,7 +133,7 @@ export default function ProfileEditPage() {
             <p className="text-gray-600 mb-8">
               To join the toadgang, you need to connect with your Farcaster account.
             </p>
-            <Button size="lg" onClick={handleConnect}>
+            <Button onClick={handleConnect}>
               Connect Farcaster
             </Button>
           </div>

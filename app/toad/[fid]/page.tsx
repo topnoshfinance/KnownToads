@@ -129,7 +129,7 @@ export default function ToadCardPage() {
                 <code className="flex-1 text-sm font-mono bg-white px-3 py-2 rounded border break-all">
                   {profile.creator_coin_address}
                 </code>
-                <Button size="sm" onClick={handleCopyAddress}>
+                <Button onClick={handleCopyAddress} style={{ padding: 'var(--spacing-sm) var(--spacing-md)', fontSize: 'var(--text-sm)' }}>
                   {copied ? '✓' : 'Copy'}
                 </Button>
               </div>
@@ -140,7 +140,6 @@ export default function ToadCardPage() {
               )}
             </div>
             <Button
-              size="lg"
               className="w-full"
               onClick={handleBuyClick}
             >
