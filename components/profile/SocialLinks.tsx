@@ -82,42 +82,48 @@ export function SocialLinks({
 
   // Compact view for directory (emojis side by side)
   if (compactView) {
+    // Find Farcaster link once
+    const farcasterLink = links.find(l => l.platform === 'farcaster');
+    const otherLinks = links.filter(l => l.platform !== 'farcaster');
+    
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xs)' }}>
         {/* Farcaster username on its own line */}
-        {links.find(l => l.platform === 'farcaster') && (
+        {farcasterLink && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-xs)' }}>
             <a
-              href={links.find(l => l.platform === 'farcaster')?.url}
+              href={farcasterLink.url}
               target="_blank"
               rel="noopener noreferrer"
               className="social-link"
               style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--spacing-xs)', fontSize: 'var(--text-xs)' }}
             >
               <span style={{ fontSize: 'var(--text-sm)' }}>🎭</span>
-              <span>@{links.find(l => l.platform === 'farcaster')?.handle}</span>
+              <span>@{farcasterLink.handle}</span>
             </a>
           </div>
         )}
         {/* Other platforms as emojis only, side by side */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
-          {links.filter(l => l.platform !== 'farcaster').map((link) => (
-            <a
-              key={link.platform}
-              href={link.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="social-link"
-              title={link.handle ? `@${link.handle}` : link.platform}
-              style={{ display: 'inline-flex', alignItems: 'center', fontSize: 'var(--text-base)' }}
-            >
-              {link.platform === 'x' && <span>🐦</span>}
-              {link.platform === 'telegram' && <span>💬</span>}
-              {link.platform === 'zora' && <span>🎨</span>}
-              {!link.valid && <WarningIcon title="This link may be broken or invalid" />}
-            </a>
-          ))}
-        </div>
+        {otherLinks.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+            {otherLinks.map((link) => (
+              <a
+                key={link.platform}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="social-link"
+                title={link.handle ? `@${link.handle}` : link.platform}
+                style={{ display: 'inline-flex', alignItems: 'center', fontSize: 'var(--text-base)' }}
+              >
+                {link.platform === 'x' && <span>🐦</span>}
+                {link.platform === 'telegram' && <span>💬</span>}
+                {link.platform === 'zora' && <span>🎨</span>}
+                {!link.valid && <WarningIcon title="This link may be broken or invalid" />}
+              </a>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
