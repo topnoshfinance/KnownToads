@@ -9,6 +9,10 @@
   padding: var(--spacing-lg);
 }
 
+.toad-card-compact {
+  padding: var(--spacing-md);
+}
+
 .toad-card:hover {
   border-color: var(--toby-blue);
   box-shadow: var(--shadow-lg);
@@ -37,6 +41,29 @@
 }
 
 .btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-buy-compact {
+  background: linear-gradient(135deg, var(--toby-blue) 0%, var(--purple-accent) 100%);
+  color: var(--white);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: var(--radius-sm);
+  border: none;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  white-space: nowrap;
+}
+
+.btn-buy-compact:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.btn-buy-compact:active {
   transform: translateY(0);
 }
 
@@ -69,6 +96,12 @@
 .avatar-sm {
   width: 40px;
   height: 40px;
+}
+
+.avatar-compact {
+  width: 60px;
+  height: 60px;
+  border-width: 2px;
 }
 
 .avatar-md {
