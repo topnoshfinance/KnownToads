@@ -5,6 +5,8 @@ import { Profile } from '@/types/profile';
 import { supabase } from '@/lib/supabase';
 import { ToadGrid } from '@/components/directory/ToadGrid';
 import { SearchBar } from '@/components/directory/SearchBar';
+import { Header } from '@/components/ui/Header';
+import { Loading } from '@/components/ui/Loading';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 
@@ -64,14 +66,24 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-50 to-green-100">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold text-green-800 mb-4">
+    <div style={{ minHeight: '100vh' }}>
+      <Header />
+      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: 'var(--spacing-xl)' }}>
+        {/* Hero Section */}
+        <div style={{ textAlign: 'center', marginBottom: 'var(--spacing-2xl)' }}>
+          <h1 style={{ 
+            fontSize: 'var(--text-4xl)', 
+            fontWeight: 'var(--font-bold)',
+            color: 'var(--deep-blue)',
+            marginBottom: 'var(--spacing-md)',
+          }}>
             🐸 KnownToads
           </h1>
-          <p className="text-xl text-gray-700 mb-6">
+          <p style={{ 
+            fontSize: 'var(--text-xl)', 
+            color: 'var(--text-secondary)',
+            marginBottom: 'var(--spacing-lg)',
+          }}>
             The Toadgang Community Directory
           </p>
           <Link href="/profile/edit">
@@ -80,52 +92,55 @@ export default function HomePage() {
         </div>
 
         {/* Search and Filter */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <SearchBar
-                value={searchQuery}
-                onChange={setSearchQuery}
-                placeholder="Search toads by username..."
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant={sortBy === 'newest' ? 'primary' : 'secondary'}
-                onClick={() => setSortBy('newest')}
-              >
-                Newest
-              </Button>
-              <Button
-                variant={sortBy === 'alphabetical' ? 'primary' : 'secondary'}
-                onClick={() => setSortBy('alphabetical')}
-              >
-                A-Z
-              </Button>
-            </div>
+        <div style={{ marginBottom: 'var(--spacing-xl)' }}>
+          <SearchBar
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Search toads by username..."
+          />
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'center',
+            gap: 'var(--spacing-md)',
+            marginTop: 'var(--spacing-md)',
+          }}>
+            <Button
+              variant={sortBy === 'newest' ? 'primary' : 'secondary'}
+              onClick={() => setSortBy('newest')}
+              style={{ padding: 'var(--spacing-sm) var(--spacing-lg)', fontSize: 'var(--text-base)' }}
+            >
+              Newest
+            </Button>
+            <Button
+              variant={sortBy === 'alphabetical' ? 'primary' : 'secondary'}
+              onClick={() => setSortBy('alphabetical')}
+              style={{ padding: 'var(--spacing-sm) var(--spacing-lg)', fontSize: 'var(--text-base)' }}
+            >
+              A-Z
+            </Button>
           </div>
         </div>
 
         {/* Loading State */}
-        {loading && (
-          <div className="text-center py-12">
-            <p className="text-gray-600 text-lg">Loading toads... 🐸</p>
-          </div>
-        )}
+        {loading && <Loading />}
 
         {/* Profiles Grid */}
         {!loading && <ToadGrid profiles={filteredProfiles} />}
 
         {/* Footer */}
-        <div className="text-center mt-12 text-gray-600">
+        <div style={{ 
+          textAlign: 'center', 
+          marginTop: 'var(--spacing-2xl)',
+          color: 'var(--text-secondary)',
+        }}>
           <p>Built for the toadgang community 🐸</p>
-          <p className="text-sm mt-2">
+          <p style={{ fontSize: 'var(--text-sm)', marginTop: 'var(--spacing-sm)' }}>
             Follow{' '}
             <a
               href="https://warpcast.com/toadgod1017"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-green-600 hover:text-green-700 underline"
+              className="social-link"
             >
               @toadgod1017
             </a>{' '}

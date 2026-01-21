@@ -9,6 +9,11 @@ import { FrameSDKProvider } from '@/components/FrameSDKProvider';
 export const metadata: Metadata = {
   title: 'KnownToads - Toadgang Directory',
   description: 'Open address book for the toadgang crypto community',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/toby-logo.svg',
+  },
 };
 
 export default function RootLayout({

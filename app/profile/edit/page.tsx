@@ -7,6 +7,7 @@ import { useAccount, useConnect } from 'wagmi';
 import { frameConnector } from '@/lib/wagmi';
 import { ProfileForm } from '@/components/profile/ProfileForm';
 import { Button } from '@/components/ui/Button';
+import { Header } from '@/components/ui/Header';
 import { ProfileFormData } from '@/types/profile';
 import { supabase } from '@/lib/supabase';
 import { useFarcasterContext } from '@/lib/useFarcasterContext';
@@ -118,19 +119,22 @@ export default function ProfileEditPage() {
 
   if (!isConnected) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-green-50 to-green-100">
-        <div className="max-w-2xl mx-auto px-4 py-8">
-          <Link href="/">
-            <Button variant="secondary" className="mb-6">
-              ← Back to Directory
-            </Button>
-          </Link>
-
-          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">
+      <div style={{ minHeight: '100vh' }}>
+        <Header />
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: 'var(--spacing-xl)' }}>
+          <div className="toad-card" style={{ padding: 'var(--spacing-2xl)', textAlign: 'center' }}>
+            <h1 style={{ 
+              fontSize: 'var(--text-3xl)', 
+              fontWeight: 'var(--font-bold)',
+              color: 'var(--deep-blue)',
+              marginBottom: 'var(--spacing-md)',
+            }}>
               Connect with Farcaster
             </h1>
-            <p className="text-gray-600 mb-8">
+            <p style={{ 
+              color: 'var(--text-secondary)',
+              marginBottom: 'var(--spacing-xl)',
+            }}>
               To join the toadgang, you need to connect with your Farcaster account.
             </p>
             <Button onClick={handleConnect}>
@@ -143,28 +147,34 @@ export default function ProfileEditPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-50 to-green-100">
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <Link href="/">
-          <Button variant="secondary" className="mb-6">
-            ← Back to Directory
-          </Button>
-        </Link>
-
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+    <div style={{ minHeight: '100vh' }}>
+      <Header />
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: 'var(--spacing-xl)' }}>
+        <div className="toad-card" style={{ padding: 'var(--spacing-2xl)' }}>
+          <h1 style={{ 
+            fontSize: 'var(--text-3xl)', 
+            fontWeight: 'var(--font-bold)',
+            color: 'var(--deep-blue)',
+            marginBottom: 'var(--spacing-sm)',
+          }}>
             Edit Your Profile
           </h1>
-          <p className="text-gray-600 mb-2">
+          <p style={{ 
+            color: 'var(--text-secondary)',
+            marginBottom: 'var(--spacing-sm)',
+          }}>
             Welcome, @{farcasterContext.username}!
           </p>
-          <p className="text-gray-600 mb-8">
+          <p style={{ 
+            color: 'var(--text-secondary)',
+            marginBottom: 'var(--spacing-xl)',
+          }}>
             Join the toadgang by creating your profile. Make sure you follow{' '}
             <a
               href="https://warpcast.com/toadgod1017"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-green-600 hover:text-green-700 underline"
+              className="social-link"
             >
               @toadgod1017
             </a>
@@ -172,32 +182,50 @@ export default function ProfileEditPage() {
           </p>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+            <div style={{ 
+              background: '#fef2f2',
+              border: '2px solid #fca5a5',
+              color: '#991b1b',
+              padding: 'var(--spacing-md) var(--spacing-lg)',
+              borderRadius: 'var(--radius-md)',
+              marginBottom: 'var(--spacing-lg)',
+            }}>
               {error}
             </div>
           )}
 
           {success && (
-            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6">
+            <div style={{ 
+              background: '#f0fdf4',
+              border: '2px solid #86efac',
+              color: '#166534',
+              padding: 'var(--spacing-md) var(--spacing-lg)',
+              borderRadius: 'var(--radius-md)',
+              marginBottom: 'var(--spacing-lg)',
+            }}>
               Profile saved successfully! Redirecting...
             </div>
           )}
 
           <ProfileForm onSubmit={handleSubmit} isLoading={isLoading} />
 
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <h3 className="font-semibold text-blue-900 mb-2">
+          <div className="info-card" style={{ marginTop: 'var(--spacing-lg)' }}>
+            <h3 style={{ 
+              fontWeight: 'var(--font-semibold)',
+              color: 'var(--deep-blue)',
+              marginBottom: 'var(--spacing-sm)',
+            }}>
               Important Notes:
             </h3>
-            <ul className="text-sm text-blue-800 space-y-1">
-              <li>
-                • Creator coin address must be a valid ERC-20 token on Base
-              </li>
-              <li>• X handle: just the username (with or without @)</li>
-              <li>
-                • Telegram: username, @username, or full t.me link work
-              </li>
-              <li>• Zora page: must be a zora.co URL</li>
+            <ul style={{ 
+              fontSize: 'var(--text-sm)',
+              color: 'var(--text-secondary)',
+              paddingLeft: 'var(--spacing-lg)',
+            }}>
+              <li>Creator coin address must be a valid ERC-20 token on Base</li>
+              <li>X handle: just the username (with or without @)</li>
+              <li>Telegram: username, @username, or full t.me link work</li>
+              <li>Zora page: must be a zora.co URL</li>
             </ul>
           </div>
         </div>
