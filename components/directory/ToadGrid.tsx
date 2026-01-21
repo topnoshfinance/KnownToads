@@ -16,7 +16,7 @@ export function ToadGrid({ profiles }: ToadGridProps) {
       display: 'grid',
       gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
       gap: 'var(--spacing-xl)',
-      padding: 'var(--spacing-xl)',
+      padding: 'var(--spacing-md)',
       maxWidth: '1400px',
       margin: '0 auto',
     }}>
