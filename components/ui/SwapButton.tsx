@@ -33,6 +33,17 @@ export function SwapButton({
 
   const amounts = [...SWAP_AMOUNTS];
 
+  // Validate props on mount
+  useEffect(() => {
+    if (!isValidChainId(chainId)) {
+      setError('Only Base chain (8453) is supported');
+    } else if (!isValidTokenAddress(tokenAddress)) {
+      setError('Invalid token address format');
+    } else {
+      setError(null);
+    }
+  }, [tokenAddress, chainId]);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -196,12 +207,13 @@ export function SwapButton({
                 cursor: 'pointer',
                 transition: 'all var(--transition-fast)',
                 textAlign: 'left',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
               }}
             >
-              {amount} USDC
-              {selectedAmount === amount && (
-                <span style={{ float: 'right' }}>✓</span>
-              )}
+              <span>{amount} USDC</span>
+              {selectedAmount === amount && <span>✓</span>}
             </button>
           ))}
         </div>

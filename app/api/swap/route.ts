@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!amountUSD) {
+    if (typeof amountUSD === 'undefined' || amountUSD === null) {
       return NextResponse.json(
         { error: 'Amount is required' },
         { status: 400 }
