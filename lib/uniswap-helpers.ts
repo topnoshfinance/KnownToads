@@ -1,4 +1,4 @@
-import { Address, PublicClient } from 'viem';
+import { Address } from 'viem';
 
 // Uniswap V3 Quoter V2 address on Base
 export const QUOTER_V2_ADDRESS = '0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a' as Address;
@@ -122,26 +122,6 @@ export function calculateMinimumOutput(
 ): bigint {
   // amountOutMinimum = expectedOutput * (10000 - slippage) / 10000
   return (expectedOutput * (10000n - slippageBasisPoints)) / 10000n;
-}
-
-/**
- * Calculate price impact percentage
- * @param amountIn - Input amount (in input token decimals)
- * @param amountOut - Output amount (in output token decimals)
- * @param inputDecimals - Input token decimals
- * @param outputDecimals - Output token decimals
- * @returns Price impact as a number (e.g., 0.05 for 5%)
- */
-export function calculatePriceImpact(
-  amountIn: bigint,
-  amountOut: bigint,
-  inputDecimals: number,
-  outputDecimals: number
-): number {
-  // This is a simplified calculation
-  // For production, you'd want to compare against a reference price
-  // For now, we'll return 0 as we'd need additional market data
-  return 0;
 }
 
 /**

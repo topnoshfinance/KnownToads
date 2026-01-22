@@ -53,9 +53,18 @@ export async function POST(
     }
 
     // Create a public client to fetch quote
+    const rpcUrl = process.env.BASE_RPC_URL;
+    if (!rpcUrl) {
+      console.error('BASE_RPC_URL environment variable is not set');
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+
     const publicClient = createPublicClient({
       chain: base,
-      transport: http(process.env.BASE_RPC_URL || 'https://mainnet.base.org'),
+      transport: http(rpcUrl),
     });
 
     // Amount: 1 USDC (6 decimals)
