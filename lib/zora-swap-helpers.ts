@@ -43,7 +43,7 @@ export async function getZoraQuote(
       takerAddress,
     });
 
-    const apiKey = process.env.ZORA_API_KEY || process.env.NEXT_PUBLIC_ZORA_API_KEY;
+    const apiKey = process.env.ZORA_API_KEY;
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };
@@ -79,7 +79,10 @@ export async function getZoraQuote(
 
 /**
  * Get swap transaction data from Zora API
- * This is the same as getZoraQuote since Zora returns transaction data in the quote
+ * Note: This is currently an alias for getZoraQuote since Zora returns
+ * transaction data in the quote response. Kept as a separate function for
+ * consistency with the 0x API pattern and for future flexibility if Zora
+ * separates quote and transaction endpoints.
  * @param sellToken - Token to sell (e.g., USDC)
  * @param buyToken - Token to buy (creator coin)
  * @param sellAmount - Amount to sell in base units

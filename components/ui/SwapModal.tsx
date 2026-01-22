@@ -75,7 +75,7 @@ export function SwapModal({
   
   // Token info state
   const [tokenInfo, setTokenInfo] = useState<{ symbol: string; decimals: number }>({
-    symbol: tokenSymbol,
+    symbol: tokenSymbol || 'TOKEN',
     decimals: 18,
   });
   const [isLoadingTokenInfo, setIsLoadingTokenInfo] = useState<boolean>(false);
@@ -127,6 +127,12 @@ export function SwapModal({
     hash: swapData,
     chainId: base.id,
   });
+
+  // Helper function to get provider display name
+  const getProviderDisplayName = (provider?: SwapProvider): string => {
+    if (!provider) return 'Zora & 0x Protocol';
+    return provider === 'zora' ? 'Zora' : '0x Protocol';
+  };
 
   // Define executeSwap and executeApprove before the useEffects that use them
   const fetchQuote = useCallback(async () => {
@@ -597,7 +603,7 @@ export function SwapModal({
                       marginTop: 'var(--spacing-xs)',
                       fontWeight: 'var(--font-semibold)',
                     }}>
-                      Provider: {quote.provider === 'zora' ? 'Zora' : '0x Protocol'}
+                      Provider: {getProviderDisplayName(quote.provider)}
                     </div>
                   )}
                 </>
@@ -696,7 +702,7 @@ export function SwapModal({
               color: 'var(--text-secondary)',
               textAlign: 'center',
             }}>
-              Swaps powered by {quote?.provider === 'zora' ? 'Zora' : quote?.provider === '0x' ? '0x Protocol' : 'Zora & 0x Protocol'}
+              Swaps powered by {getProviderDisplayName(quote?.provider)}
             </div>
           </>
         )}

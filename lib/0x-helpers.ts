@@ -251,7 +251,7 @@ export async function getSwapQuote(
       };
     }
   } catch (error) {
-    console.log('Zora quote failed, trying 0x...', error);
+    console.debug('Zora quote unavailable, trying 0x fallback...', error);
   }
 
   // Fallback to 0x
@@ -296,7 +296,7 @@ export async function getSwapTransaction(
       };
     }
   } catch (error) {
-    console.log('Zora transaction failed, trying 0x...', error);
+    console.debug('Zora transaction unavailable, trying 0x fallback...', error);
   }
 
   // Fallback to 0x
