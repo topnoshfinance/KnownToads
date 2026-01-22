@@ -16,8 +16,8 @@
 }
 
 .profileImage {
-  width: 200px;
-  height: 200px;
+  width: 200px !important;
+  height: 200px !important;
   margin-bottom: var(--spacing-md);
   object-fit: cover;
 }
@@ -93,8 +93,8 @@
   }
 
   .profileImage {
-    width: 120px;
-    height: 120px;
+    width: 120px !important;
+    height: 120px !important;
   }
 
   .profileUsername {
