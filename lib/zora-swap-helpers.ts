@@ -4,6 +4,9 @@ import { Address } from 'viem';
 const ZORA_API_BASE_URL = 'https://api-sdk.zora.engineering';
 const BASE_CHAIN_ID = 8453;
 
+// Slippage tolerance: 3%
+const SLIPPAGE_PERCENTAGE = 0.03;
+
 /**
  * Zora API swap quote response type
  */
@@ -35,13 +38,15 @@ export async function getZoraQuote(
   takerAddress: Address
 ): Promise<ZoraSwapQuote | null> {
   try {
-    const params = new URLSearchParams({
-      chainId: BASE_CHAIN_ID.toString(),
-      sellToken,
-      buyToken,
-      sellAmount: sellAmount.toString(),
-      takerAddress,
-    });
+    // Prepare request body for Zora's /quote endpoint
+    const requestBody = {
+      inputToken: sellToken,
+      outputToken: buyToken,
+      amount: sellAmount.toString(),
+      chain: BASE_CHAIN_ID,
+      userAddress: takerAddress,
+      slippage: SLIPPAGE_PERCENTAGE,
+    };
 
     const apiKey = process.env.ZORA_API_KEY;
     const headers: HeadersInit = {
@@ -52,14 +57,32 @@ export async function getZoraQuote(
       headers['api-key'] = apiKey;
     }
 
+    // Log the request for debugging
+    console.debug('Zora API Request:', {
+      url: `${ZORA_API_BASE_URL}/quote`,
+      method: 'POST',
+      body: requestBody,
+    });
+
     const response = await fetch(
-      `${ZORA_API_BASE_URL}/api/coinSwaps?${params.toString()}`,
-      { headers }
+      `${ZORA_API_BASE_URL}/quote`,
+      {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody),
+      }
     );
+
+    // Log response status for debugging
+    console.debug('Zora API Response Status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Zora API error:', response.status, errorText);
+      console.error('Zora API error response:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText,
+      });
       
       // No liquidity or route not available
       if (response.status === 404 || response.status === 400) {
@@ -70,6 +93,17 @@ export async function getZoraQuote(
     }
 
     const quote: ZoraSwapQuote = await response.json();
+    
+    // Log successful response for debugging
+    console.debug('Zora API successful response:', {
+      chainId: quote.chainId,
+      sellToken: quote.sellToken,
+      buyToken: quote.buyToken,
+      sellAmount: quote.sellAmount,
+      buyAmount: quote.buyAmount,
+      hasTransactionData: !!(quote.to && quote.data),
+    });
+    
     return quote;
   } catch (error) {
     console.error('Error fetching Zora quote:', error);
