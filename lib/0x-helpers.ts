@@ -13,8 +13,12 @@ export const BASE_CHAIN_ID = 8453;
 // 0x API base URL
 const ZEROX_API_BASE_URL = 'https://api.0x.org';
 
-// Slippage tolerance: 3%
-export const SLIPPAGE_PERCENTAGE = 0.03;
+// Progressive slippage levels for Zora creator/post coins on shallow Uniswap V4 pools
+// These coins often have low liquidity, requiring higher slippage tolerance
+export const SLIPPAGE_LEVELS = [0.05, 0.10, 0.15]; // 5%, 10%, 15%
+
+// Default slippage tolerance: 10%
+export const SLIPPAGE_PERCENTAGE = 0.10;
 
 /**
  * Swap provider type
@@ -46,15 +50,17 @@ export interface QuoteResult {
   price: string;
   estimatedGas: string;
   provider?: SwapProvider;
+  slippageUsed?: number; // The slippage percentage as decimal (e.g., 0.10 for 10%) that was successfully used for this quote
 }
 
 /**
- * Get a price quote from 0x API
+ * Get a price quote from 0x API with progressive slippage retry
+ * Tries multiple slippage levels for Zora creator/post coins on shallow Uniswap V4 pools
  * @param sellToken - Token to sell (e.g., USDC)
  * @param buyToken - Token to buy
  * @param sellAmount - Amount to sell in base units
  * @param takerAddress - Address of the user making the swap
- * @returns Quote data or null if no liquidity
+ * @returns Quote data or null if no liquidity at any slippage level
  */
 export async function get0xQuote(
   sellToken: Address,
@@ -62,62 +68,77 @@ export async function get0xQuote(
   sellAmount: bigint,
   takerAddress: Address
 ): Promise<QuoteResult | null> {
-  try {
-    const params = new URLSearchParams({
-      chainId: BASE_CHAIN_ID.toString(),
-      sellToken,
-      buyToken,
-      sellAmount: sellAmount.toString(),
-      takerAddress,
-      slippagePercentage: SLIPPAGE_PERCENTAGE.toString(),
-    });
-
-    const apiKey = process.env.ZEROX_API_KEY;
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-    
-    if (apiKey) {
-      headers['0x-api-key'] = apiKey;
-    }
-
-    const response = await fetch(
-      `${ZEROX_API_BASE_URL}/swap/v1/quote?${params.toString()}`,
-      { headers }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('0x API error:', response.status, errorText);
+  // Try each slippage level progressively
+  for (const slippage of SLIPPAGE_LEVELS) {
+    try {
+      console.log(`Attempting 0x quote with ${(slippage * 100).toFixed(0)}% slippage...`);
       
-      if (response.status === 404) {
-        // No liquidity available
-        return null;
+      const params = new URLSearchParams({
+        chainId: BASE_CHAIN_ID.toString(),
+        sellToken,
+        buyToken,
+        sellAmount: sellAmount.toString(),
+        takerAddress,
+        slippagePercentage: slippage.toString(),
+      });
+
+      const apiKey = process.env.ZEROX_API_KEY;
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (apiKey) {
+        headers['0x-api-key'] = apiKey;
       }
-      
-      throw new Error(`0x API error: ${response.status}`);
-    }
 
-    const quote: ZeroXQuote = await response.json();
-    
-    return {
-      amountOut: BigInt(quote.buyAmount),
-      price: quote.price,
-      estimatedGas: quote.estimatedGas,
-    };
-  } catch (error) {
-    console.error('Error fetching 0x quote:', error);
-    return null;
+      const response = await fetch(
+        `${ZEROX_API_BASE_URL}/swap/v1/quote?${params.toString()}`,
+        { headers }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log(`0x API error at ${(slippage * 100).toFixed(0)}% slippage:`, response.status, errorText);
+        
+        if (response.status === 404) {
+          // No liquidity at this slippage level, try next
+          continue;
+        }
+        
+        // For other errors, also try next slippage level
+        continue;
+      }
+
+      const quote: ZeroXQuote = await response.json();
+      
+      console.log(`✓ 0x quote successful at ${(slippage * 100).toFixed(0)}% slippage`);
+      
+      return {
+        amountOut: BigInt(quote.buyAmount),
+        price: quote.price,
+        estimatedGas: quote.estimatedGas,
+        slippageUsed: slippage,
+      };
+    } catch (error) {
+      console.error(`Error fetching 0x quote at ${(slippage * 100).toFixed(0)}% slippage:`, error);
+      // Continue to next slippage level
+      continue;
+    }
   }
+  
+  // All slippage levels failed
+  console.log('0x quote failed at all slippage levels');
+  return null;
 }
 
 /**
- * Get a swap transaction from 0x API
+ * Get a swap transaction from 0x API with progressive slippage retry
+ * Tries multiple slippage levels for Zora creator/post coins on shallow Uniswap V4 pools
  * @param sellToken - Token to sell (e.g., USDC)
  * @param buyToken - Token to buy
  * @param sellAmount - Amount to sell in base units
  * @param takerAddress - Address of the user making the swap
- * @returns Transaction data or null if no liquidity
+ * @returns Transaction data or null if no liquidity at any slippage level
  */
 export async function get0xSwapTransaction(
   sellToken: Address,
@@ -125,48 +146,62 @@ export async function get0xSwapTransaction(
   sellAmount: bigint,
   takerAddress: Address
 ): Promise<ZeroXQuote | null> {
-  try {
-    const params = new URLSearchParams({
-      chainId: BASE_CHAIN_ID.toString(),
-      sellToken,
-      buyToken,
-      sellAmount: sellAmount.toString(),
-      takerAddress,
-      slippagePercentage: SLIPPAGE_PERCENTAGE.toString(),
-    });
-
-    const apiKey = process.env.ZEROX_API_KEY;
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-    
-    if (apiKey) {
-      headers['0x-api-key'] = apiKey;
-    }
-
-    const response = await fetch(
-      `${ZEROX_API_BASE_URL}/swap/v1/quote?${params.toString()}`,
-      { headers }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('0x API error:', response.status, errorText);
+  // Try each slippage level progressively
+  for (const slippage of SLIPPAGE_LEVELS) {
+    try {
+      console.log(`Attempting 0x swap transaction with ${(slippage * 100).toFixed(0)}% slippage...`);
       
-      if (response.status === 404) {
-        // No liquidity available
-        return null;
+      const params = new URLSearchParams({
+        chainId: BASE_CHAIN_ID.toString(),
+        sellToken,
+        buyToken,
+        sellAmount: sellAmount.toString(),
+        takerAddress,
+        slippagePercentage: slippage.toString(),
+      });
+
+      const apiKey = process.env.ZEROX_API_KEY;
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (apiKey) {
+        headers['0x-api-key'] = apiKey;
       }
-      
-      throw new Error(`0x API error: ${response.status}`);
-    }
 
-    const quote: ZeroXQuote = await response.json();
-    return quote;
-  } catch (error) {
-    console.error('Error fetching 0x swap transaction:', error);
-    return null;
+      const response = await fetch(
+        `${ZEROX_API_BASE_URL}/swap/v1/quote?${params.toString()}`,
+        { headers }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log(`0x API error at ${(slippage * 100).toFixed(0)}% slippage:`, response.status, errorText);
+        
+        if (response.status === 404) {
+          // No liquidity at this slippage level, try next
+          continue;
+        }
+        
+        // For other errors, also try next slippage level
+        continue;
+      }
+
+      const quote: ZeroXQuote = await response.json();
+      
+      console.log(`✓ 0x swap transaction successful at ${(slippage * 100).toFixed(0)}% slippage`);
+      
+      return quote;
+    } catch (error) {
+      console.error(`Error fetching 0x swap transaction at ${(slippage * 100).toFixed(0)}% slippage:`, error);
+      // Continue to next slippage level
+      continue;
+    }
   }
+  
+  // All slippage levels failed
+  console.log('0x swap transaction failed at all slippage levels');
+  return null;
 }
 
 /**

@@ -12,6 +12,7 @@ export interface Profile {
   telegram_handle_valid?: boolean;
   zora_page_url?: string | null;
   zora_page_valid?: boolean;
+  token_ticker?: string | null;
   created_at: string;
   updated_at: string;
 }

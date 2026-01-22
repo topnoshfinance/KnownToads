@@ -18,7 +18,6 @@ export default function ToadCardPage() {
   const fid = params.fid as string;
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (fid) {
@@ -41,14 +40,6 @@ export default function ToadCardPage() {
       console.error('Error fetching profile:', error);
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function handleCopyAddress() {
-    if (profile) {
-      await navigator.clipboard.writeText(profile.creator_coin_address);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
     }
   }
 
@@ -122,12 +113,15 @@ export default function ToadCardPage() {
               Social Links
             </h2>
             <SocialLinks
+              profile={profile}
               xHandle={profile.x_handle}
               xHandleValid={profile.x_handle_valid}
               telegramHandle={profile.telegram_handle}
               telegramHandleValid={profile.telegram_handle_valid}
               zoraPageUrl={profile.zora_page_url}
               zoraPageValid={profile.zora_page_valid}
+              creatorCoinAddress={profile.creator_coin_address}
+              creatorCoinTicker={profile.token_ticker}
             />
           </div>
 
@@ -138,22 +132,6 @@ export default function ToadCardPage() {
               chainId={profile.chain_id}
               style={{ width: '100%' }}
             />
-          </div>
-
-          {/* Contract Address Footer */}
-          <div className={styles.contractAddressFooter}>
-            <span className={styles.contractAddressLabel}>Contract:</span>
-            <code className={styles.contractAddressCode}>
-              {profile.creator_coin_address}
-            </code>
-            <button onClick={handleCopyAddress} className={styles.copyButtonSmall}>
-              {copied ? '✓' : 'Copy'}
-            </button>
-            {profile.chain_id !== 8453 && (
-              <span className={styles.chainWarning}>
-                ⚠️ Chain ID: {profile.chain_id}
-              </span>
-            )}
           </div>
 
           {/* Metadata */}
