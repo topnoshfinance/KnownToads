@@ -5,6 +5,7 @@ export interface Profile {
   pfp_cached_at: string;
   creator_coin_address: string;
   chain_id: number;
+  bio?: string | null;
   x_handle?: string | null;
   x_handle_valid?: boolean;
   telegram_handle?: string | null;
@@ -17,6 +18,7 @@ export interface Profile {
 
 export interface ProfileFormData {
   creator_coin_address: string;
+  bio?: string;
   x_handle?: string;
   telegram_handle?: string;
   zora_page_url?: string;

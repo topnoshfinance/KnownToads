@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Input } from '../ui/Input';
+import { Textarea } from '../ui/Textarea';
 import { Button } from '../ui/Button';
 import { ProfileFormData } from '@/types/profile';
 
@@ -14,6 +15,7 @@ interface ProfileFormProps {
 export function ProfileForm({ initialData, onSubmit, isLoading = false }: ProfileFormProps) {
   const [formData, setFormData] = useState<ProfileFormData>({
     creator_coin_address: initialData?.creator_coin_address || '',
+    bio: initialData?.bio || '',
     x_handle: initialData?.x_handle || '',
     telegram_handle: initialData?.telegram_handle || '',
     zora_page_url: initialData?.zora_page_url || '',
@@ -54,6 +56,15 @@ export function ProfileForm({ initialData, onSubmit, isLoading = false }: Profil
         placeholder="0x..."
         error={errors.creator_coin_address}
         disabled={isLoading}
+      />
+
+      <Textarea
+        label="Bio"
+        value={formData.bio}
+        onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+        placeholder="Tell the toadgang about yourself, your projects, and lore spreading initiatives..."
+        disabled={isLoading}
+        rows={4}
       />
 
       <Input
