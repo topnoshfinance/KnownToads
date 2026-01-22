@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import { WarningIcon } from '../ui/WarningIcon';
 import type { Profile } from '@/types/profile';
 
@@ -98,7 +99,7 @@ export function SocialLinks({
               className="social-link"
               style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--spacing-xs)', fontSize: 'var(--text-xs)' }}
             >
-              <span style={{ fontSize: 'var(--text-sm)' }}>🎭</span>
+              <Image src="/farcaster-logo.svg" alt="Farcaster" width={16} height={16} />
               <span>@{farcasterLink.handle}</span>
             </a>
           </div>
@@ -116,9 +117,9 @@ export function SocialLinks({
                 title={link.handle ? `@${link.handle}` : link.platform}
                 style={{ display: 'inline-flex', alignItems: 'center', fontSize: 'var(--text-base)' }}
               >
-                {link.platform === 'x' && <span>🐦</span>}
-                {link.platform === 'telegram' && <span>💬</span>}
-                {link.platform === 'zora' && <span>🎨</span>}
+                {link.platform === 'x' && <Image src="/x-logo.svg" alt="X (Twitter)" width={16} height={16} />}
+                {link.platform === 'telegram' && <Image src="/telegram-logo.svg" alt="Telegram" width={16} height={16} />}
+                {link.platform === 'zora' && <Image src="/zora-logo.svg" alt="Zora" width={16} height={16} />}
                 {!link.valid && <WarningIcon title="This link may be broken or invalid" />}
               </a>
             ))}
@@ -140,10 +141,10 @@ export function SocialLinks({
             className="social-link"
             style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--spacing-xs)', fontSize: 'var(--text-sm)' }}
           >
-            {link.platform === 'farcaster' && <span style={{ fontSize: 'var(--text-base)' }}>🎭</span>}
-            {link.platform === 'x' && <span style={{ fontSize: 'var(--text-base)' }}>🐦</span>}
-            {link.platform === 'telegram' && <span style={{ fontSize: 'var(--text-base)' }}>💬</span>}
-            {link.platform === 'zora' && <span style={{ fontSize: 'var(--text-base)' }}>🎨</span>}
+            {link.platform === 'farcaster' && <Image src="/farcaster-logo.svg" alt="Farcaster" width={20} height={20} />}
+            {link.platform === 'x' && <Image src="/x-logo.svg" alt="X (Twitter)" width={20} height={20} />}
+            {link.platform === 'telegram' && <Image src="/telegram-logo.svg" alt="Telegram" width={20} height={20} />}
+            {link.platform === 'zora' && <Image src="/zora-logo.svg" alt="Zora" width={20} height={20} />}
             <span>{link.handle ? `@${link.handle}` : 'Zora'}</span>
           </a>
           
