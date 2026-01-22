@@ -4,8 +4,9 @@ import { Address } from 'viem';
 const ZORA_API_BASE_URL = 'https://api-sdk.zora.engineering';
 const BASE_CHAIN_ID = 8453;
 
-// Slippage tolerance: 3%
-const SLIPPAGE_PERCENTAGE = 0.03;
+// Aggressive slippage for Zora fallback (20%)
+const ZORA_FALLBACK_SLIPPAGE_BPS = 2000; // 20%
+const ZORA_FALLBACK_SLIPPAGE_DECIMAL = ZORA_FALLBACK_SLIPPAGE_BPS / 10000; // Convert to 0.20
 
 /**
  * Zora API swap quote response type
@@ -45,7 +46,7 @@ export async function getZoraQuote(
       amount: sellAmount.toString(),
       chain: BASE_CHAIN_ID,
       userAddress: takerAddress,
-      slippage: SLIPPAGE_PERCENTAGE,
+      slippage: ZORA_FALLBACK_SLIPPAGE_DECIMAL,
     };
 
     const apiKey = process.env.ZORA_API_KEY;
@@ -57,11 +58,12 @@ export async function getZoraQuote(
       headers['api-key'] = apiKey;
     }
 
-    // Log the request for debugging
-    console.debug('Zora API Request:', {
+    // Enhanced logging for Zora API request
+    console.log('[Zora] API Request:', {
       url: `${ZORA_API_BASE_URL}/quote`,
       method: 'POST',
       body: requestBody,
+      slippageUsed: `${ZORA_FALLBACK_SLIPPAGE_BPS} bps (${(ZORA_FALLBACK_SLIPPAGE_BPS / 100).toFixed(1)}%)`,
     });
 
     const response = await fetch(
@@ -73,12 +75,12 @@ export async function getZoraQuote(
       }
     );
 
-    // Log response status for debugging
-    console.debug('Zora API Response Status:', response.status);
+    // Log response status
+    console.log('[Zora] API Response Status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Zora API error response:', {
+      console.error('[Zora] API error response:', {
         status: response.status,
         statusText: response.statusText,
         body: errorText,
@@ -94,8 +96,8 @@ export async function getZoraQuote(
 
     const quote: ZoraSwapQuote = await response.json();
     
-    // Log successful response for debugging
-    console.debug('Zora API successful response:', {
+    // Log successful response
+    console.log('[Zora] API successful response:', {
       chainId: quote.chainId,
       sellToken: quote.sellToken,
       buyToken: quote.buyToken,
@@ -106,7 +108,7 @@ export async function getZoraQuote(
     
     return quote;
   } catch (error) {
-    console.error('Error fetching Zora quote:', error);
+    console.error('[Zora] Error fetching quote:', error);
     return null;
   }
 }

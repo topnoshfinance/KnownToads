@@ -13,12 +13,13 @@ export const BASE_CHAIN_ID = 8453;
 // 0x API base URL
 const ZEROX_API_BASE_URL = 'https://api.0x.org';
 
-// Progressive slippage levels for Zora creator/post coins on shallow Uniswap V4 pools
+// Aggressive slippage tiers in basis points for Zora creator/post coins on shallow Uniswap V4 pools
 // These coins often have low liquidity, requiring higher slippage tolerance
-export const SLIPPAGE_LEVELS = [0.05, 0.10, 0.15]; // 5%, 10%, 15%
+// Format: basis points (100 bps = 1%)
+export const SLIPPAGE_TIERS_BPS = [300, 500, 1000, 1500, 2000]; // 3%, 5%, 10%, 15%, 20%
 
-// Default slippage tolerance: 10%
-export const SLIPPAGE_PERCENTAGE = 0.10;
+// High slippage warning threshold: 10% (1000 bps)
+export const HIGH_SLIPPAGE_WARNING_BPS = 1000;
 
 /**
  * Swap provider type
@@ -40,6 +41,18 @@ export interface ZeroXQuote {
   estimatedGas: string;
   buyTokenAddress: string;
   sellTokenAddress: string;
+  liquidityAvailable?: boolean;
+  priceImpactPercentage?: string;
+  estimatedPriceImpact?: string;
+  validationErrors?: Array<{
+    field: string;
+    code: number;
+    reason: string;
+  }>;
+  sources?: Array<{
+    name: string;
+    proportion: string;
+  }>;
 }
 
 /**
@@ -50,7 +63,9 @@ export interface QuoteResult {
   price: string;
   estimatedGas: string;
   provider?: SwapProvider;
-  slippageUsed?: number; // The slippage percentage as decimal (e.g., 0.10 for 10%) that was successfully used for this quote
+  slippageBps?: number; // The slippage in basis points (e.g., 1000 for 10%) that was successfully used for this quote
+  priceImpact?: string;
+  highSlippageWarning?: boolean; // True if slippage >= 10% (HIGH_SLIPPAGE_WARNING_BPS)
 }
 
 /**
@@ -69,9 +84,9 @@ export async function get0xQuote(
   takerAddress: Address
 ): Promise<QuoteResult | null> {
   // Try each slippage level progressively
-  for (const slippage of SLIPPAGE_LEVELS) {
+  for (const slippageBps of SLIPPAGE_TIERS_BPS) {
     try {
-      console.log(`Attempting 0x quote with ${(slippage * 100).toFixed(0)}% slippage...`);
+      console.log(`[0x] Attempting quote with ${slippageBps} bps (${(slippageBps / 100).toFixed(1)}%) slippage...`);
       
       const params = new URLSearchParams({
         chainId: BASE_CHAIN_ID.toString(),
@@ -79,7 +94,8 @@ export async function get0xQuote(
         buyToken,
         sellAmount: sellAmount.toString(),
         takerAddress,
-        slippagePercentage: slippage.toString(),
+        slippageBps: slippageBps.toString(),
+        includeSources: 'UniswapV4,Uniswap', // Prioritize V4 pools with Zora hooks
       });
 
       const apiKey = process.env.ZEROX_API_KEY;
@@ -98,7 +114,7 @@ export async function get0xQuote(
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.log(`0x API error at ${(slippage * 100).toFixed(0)}% slippage:`, response.status, errorText);
+        console.log(`[0x] API error at ${slippageBps} bps:`, response.status, errorText);
         
         if (response.status === 404) {
           // No liquidity at this slippage level, try next
@@ -111,23 +127,47 @@ export async function get0xQuote(
 
       const quote: ZeroXQuote = await response.json();
       
-      console.log(`✓ 0x quote successful at ${(slippage * 100).toFixed(0)}% slippage`);
+      // Enhanced logging - capture full quote response
+      console.log(`[0x] Response at ${slippageBps} bps:`, JSON.stringify({
+        status: response.status,
+        liquidityAvailable: quote.liquidityAvailable,
+        priceImpactPercentage: quote.priceImpactPercentage,
+        validationErrors: quote.validationErrors,
+        buyAmount: quote.buyAmount,
+        sources: quote.sources,
+      }, null, 2));
+
+      // Check validation errors explicitly
+      const hasLiquidityError = quote.validationErrors?.some(err => 
+        err.reason?.includes('INSUFFICIENT_ASSET_LIQUIDITY') ||
+        err.reason?.includes('PRICE_IMPACT_TOO_HIGH') ||
+        err.reason?.includes('NO_ROUTE_FOUND')
+      );
+
+      if (hasLiquidityError) {
+        console.log(`[0x] Liquidity error detected at ${slippageBps} bps, trying next tier...`);
+        continue;
+      }
+      
+      console.log(`[0x] ✓ Quote successful at ${slippageBps} bps (${(slippageBps / 100).toFixed(1)}%)`);
       
       return {
         amountOut: BigInt(quote.buyAmount),
         price: quote.price,
         estimatedGas: quote.estimatedGas,
-        slippageUsed: slippage,
+        slippageBps: slippageBps,
+        priceImpact: quote.priceImpactPercentage || quote.estimatedPriceImpact,
+        highSlippageWarning: slippageBps >= HIGH_SLIPPAGE_WARNING_BPS,
       };
     } catch (error) {
-      console.error(`Error fetching 0x quote at ${(slippage * 100).toFixed(0)}% slippage:`, error);
+      console.error(`[0x] Error fetching quote at ${slippageBps} bps:`, error);
       // Continue to next slippage level
       continue;
     }
   }
   
   // All slippage levels failed
-  console.log('0x quote failed at all slippage levels');
+  console.log('[0x] Quote failed at all slippage levels');
   return null;
 }
 
@@ -145,11 +185,11 @@ export async function get0xSwapTransaction(
   buyToken: Address,
   sellAmount: bigint,
   takerAddress: Address
-): Promise<ZeroXQuote | null> {
+): Promise<{ quote: ZeroXQuote; slippageBps: number; highSlippageWarning: boolean } | null> {
   // Try each slippage level progressively
-  for (const slippage of SLIPPAGE_LEVELS) {
+  for (const slippageBps of SLIPPAGE_TIERS_BPS) {
     try {
-      console.log(`Attempting 0x swap transaction with ${(slippage * 100).toFixed(0)}% slippage...`);
+      console.log(`[0x] Attempting swap transaction with ${slippageBps} bps (${(slippageBps / 100).toFixed(1)}%) slippage...`);
       
       const params = new URLSearchParams({
         chainId: BASE_CHAIN_ID.toString(),
@@ -157,7 +197,8 @@ export async function get0xSwapTransaction(
         buyToken,
         sellAmount: sellAmount.toString(),
         takerAddress,
-        slippagePercentage: slippage.toString(),
+        slippageBps: slippageBps.toString(),
+        includeSources: 'UniswapV4,Uniswap', // Prioritize V4 pools with Zora hooks
       });
 
       const apiKey = process.env.ZEROX_API_KEY;
@@ -176,7 +217,7 @@ export async function get0xSwapTransaction(
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.log(`0x API error at ${(slippage * 100).toFixed(0)}% slippage:`, response.status, errorText);
+        console.log(`[0x] API error at ${slippageBps} bps:`, response.status, errorText);
         
         if (response.status === 404) {
           // No liquidity at this slippage level, try next
@@ -189,34 +230,61 @@ export async function get0xSwapTransaction(
 
       const quote: ZeroXQuote = await response.json();
       
-      console.log(`✓ 0x swap transaction successful at ${(slippage * 100).toFixed(0)}% slippage`);
+      // Enhanced logging - capture full quote response
+      console.log(`[0x] Response at ${slippageBps} bps:`, JSON.stringify({
+        status: response.status,
+        liquidityAvailable: quote.liquidityAvailable,
+        priceImpactPercentage: quote.priceImpactPercentage,
+        validationErrors: quote.validationErrors,
+        buyAmount: quote.buyAmount,
+        sources: quote.sources,
+      }, null, 2));
+
+      // Check validation errors explicitly
+      const hasLiquidityError = quote.validationErrors?.some(err => 
+        err.reason?.includes('INSUFFICIENT_ASSET_LIQUIDITY') ||
+        err.reason?.includes('PRICE_IMPACT_TOO_HIGH') ||
+        err.reason?.includes('NO_ROUTE_FOUND')
+      );
+
+      if (hasLiquidityError) {
+        console.log(`[0x] Liquidity error detected at ${slippageBps} bps, trying next tier...`);
+        continue;
+      }
       
-      return quote;
+      console.log(`[0x] ✓ Swap transaction successful at ${slippageBps} bps (${(slippageBps / 100).toFixed(1)}%)`);
+      
+      return {
+        quote,
+        slippageBps,
+        highSlippageWarning: slippageBps >= HIGH_SLIPPAGE_WARNING_BPS,
+      };
     } catch (error) {
-      console.error(`Error fetching 0x swap transaction at ${(slippage * 100).toFixed(0)}% slippage:`, error);
+      console.error(`[0x] Error fetching swap transaction at ${slippageBps} bps:`, error);
       // Continue to next slippage level
       continue;
     }
   }
   
   // All slippage levels failed
-  console.log('0x swap transaction failed at all slippage levels');
+  console.log('[0x] Swap transaction failed at all slippage levels');
   return null;
 }
 
 /**
  * Calculate minimum output amount with slippage tolerance
  * @param expectedOutput - Expected output amount from quote
- * @param slippagePercentage - Slippage tolerance as decimal (default: 0.03 = 3%)
+ * @param slippageBps - Slippage tolerance in basis points (default: 1000 = 10%)
  * @returns Minimum acceptable output amount
  */
 export function calculateMinimumOutput(
   expectedOutput: bigint,
-  slippagePercentage: number = SLIPPAGE_PERCENTAGE
+  slippageBps: number = 1000
 ): bigint {
   // amountOutMinimum = expectedOutput * (1 - slippage)
-  const slippageFactor = 1 - slippagePercentage;
-  const slippageFactorBigInt = BigInt(Math.floor(slippageFactor * 10000));
+  // Convert bps to decimal: slippageBps / 10000
+  const slippageFactor = 10000 - slippageBps;
+  const slippageFactorBigInt = BigInt(slippageFactor);
   return (expectedOutput * slippageFactorBigInt) / 10000n;
 }
 
@@ -261,7 +329,7 @@ export function formatExchangeRate(
 }
 
 /**
- * Smart routing: Get swap quote from Zora first, fallback to 0x
+ * Smart routing: Try 0x first (primary), fallback to Zora
  * @param sellToken - Token to sell (e.g., USDC)
  * @param buyToken - Token to buy
  * @param sellAmount - Amount to sell in base units
@@ -274,80 +342,98 @@ export async function getSwapQuote(
   sellAmount: bigint,
   takerAddress: Address
 ): Promise<QuoteResult | null> {
-  // Try Zora first
-  try {
-    const zoraQuote = await getZoraQuote(sellToken, buyToken, sellAmount, takerAddress);
-    if (zoraQuote && zoraQuote.buyAmount) {
-      return {
-        amountOut: BigInt(zoraQuote.buyAmount),
-        price: '0', // Zora doesn't provide price field
-        estimatedGas: zoraQuote.gas || '0',
-        provider: 'zora',
-      };
-    }
-  } catch (error) {
-    console.debug('Zora quote unavailable, trying 0x fallback...', error);
-  }
-
-  // Fallback to 0x
+  console.log('[SWAP] 🔍 Attempting 0x first (primary provider)...');
+  
+  // Try 0x first (primary provider)
   try {
     const zeroXQuote = await get0xQuote(sellToken, buyToken, sellAmount, takerAddress);
     if (zeroXQuote) {
+      console.log('[SWAP] ✓ 0x quote successful, returning 0x result');
       return {
         ...zeroXQuote,
         provider: '0x',
       };
     }
   } catch (error) {
-    console.error('0x quote also failed:', error);
+    console.log('[SWAP] ⚠️ 0x quote failed, trying Zora fallback...', error);
   }
 
+  // Fallback to Zora
+  console.log('[SWAP] 🔄 Attempting Zora (fallback provider)...');
+  try {
+    const zoraQuote = await getZoraQuote(sellToken, buyToken, sellAmount, takerAddress);
+    if (zoraQuote && zoraQuote.buyAmount) {
+      console.log('[SWAP] ✓ Zora quote successful, returning Zora result');
+      return {
+        amountOut: BigInt(zoraQuote.buyAmount),
+        price: '0', // Zora doesn't provide price field
+        estimatedGas: zoraQuote.gas || '0',
+        provider: 'zora',
+        slippageBps: 2000, // Zora uses 20% slippage in fallback mode
+        highSlippageWarning: true, // Always show warning for Zora fallback
+      };
+    }
+  } catch (error) {
+    console.error('[SWAP] ❌ Zora quote also failed:', error);
+  }
+
+  console.log('[SWAP] ❌ Both providers failed');
   return null;
 }
 
 /**
- * Smart routing: Get swap transaction from Zora first, fallback to 0x
+ * Smart routing: Try 0x first (primary), fallback to Zora
  * @param sellToken - Token to sell (e.g., USDC)
  * @param buyToken - Token to buy
  * @param sellAmount - Amount to sell in base units
  * @param takerAddress - Address of the user making the swap
- * @returns Transaction data with provider or null if no liquidity
+ * @returns Transaction data with provider and slippage info or null if no liquidity
  */
 export async function getSwapTransaction(
   sellToken: Address,
   buyToken: Address,
   sellAmount: bigint,
   takerAddress: Address
-): Promise<{ to: string; data: string; value: string; provider: SwapProvider } | null> {
-  // Try Zora first
+): Promise<{ to: string; data: string; value: string; provider: SwapProvider; slippageBps: number; highSlippageWarning: boolean } | null> {
+  console.log('[SWAP] 🔍 Attempting 0x first (primary provider)...');
+  
+  // Try 0x first (primary provider)
+  try {
+    const zeroXResult = await get0xSwapTransaction(sellToken, buyToken, sellAmount, takerAddress);
+    if (zeroXResult) {
+      console.log('[SWAP] ✓ 0x transaction successful, returning 0x result');
+      return {
+        to: zeroXResult.quote.to,
+        data: zeroXResult.quote.data,
+        value: zeroXResult.quote.value,
+        provider: '0x',
+        slippageBps: zeroXResult.slippageBps,
+        highSlippageWarning: zeroXResult.highSlippageWarning,
+      };
+    }
+  } catch (error) {
+    console.log('[SWAP] ⚠️ 0x transaction failed, trying Zora fallback...', error);
+  }
+
+  // Fallback to Zora
+  console.log('[SWAP] 🔄 Attempting Zora (fallback provider)...');
   try {
     const zoraQuote = await getZoraSwapTransaction(sellToken, buyToken, sellAmount, takerAddress);
     if (zoraQuote && zoraQuote.to && zoraQuote.data) {
+      console.log('[SWAP] ✓ Zora transaction successful, returning Zora result');
       return {
         to: zoraQuote.to,
         data: zoraQuote.data,
         value: zoraQuote.value || '0',
         provider: 'zora',
+        slippageBps: 2000, // Zora uses 20% slippage in fallback mode
+        highSlippageWarning: true, // Always show warning for Zora fallback
       };
     }
   } catch (error) {
-    console.debug('Zora transaction unavailable, trying 0x fallback...', error);
+    console.error('[SWAP] ❌ Zora transaction also failed:', error);
   }
 
-  // Fallback to 0x
-  try {
-    const zeroXQuote = await get0xSwapTransaction(sellToken, buyToken, sellAmount, takerAddress);
-    if (zeroXQuote) {
-      return {
-        to: zeroXQuote.to,
-        data: zeroXQuote.data,
-        value: zeroXQuote.value,
-        provider: '0x',
-      };
-    }
-  } catch (error) {
-    console.error('0x transaction also failed:', error);
-  }
-
+  console.log('[SWAP] ❌ Both providers failed');
   return null;
 }
