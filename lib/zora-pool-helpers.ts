@@ -182,7 +182,8 @@ export async function getZoraPoolMetadata(
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(apiKey ? { 'api-key': apiKey } : {}),
+          // Use consistent auth header format - Bearer token
+          ...(apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}),
         },
         body: JSON.stringify({
           inputToken: USDC_ADDRESS,

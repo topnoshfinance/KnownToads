@@ -112,8 +112,14 @@ export async function getUniswapV4SwapTransaction(
     
     // Simplified ABI for Uniswap V4 PoolManager swap function
     // IMPORTANT: This ABI should be validated against the actual deployed V4 contract
-    // In production, consider importing from @uniswap/v4-sdk if available
-    // The actual contract ABI may differ - this is a conceptual implementation
+    // 
+    // TODO: In production, this should be replaced with one of the following:
+    // 1. Import from @uniswap/v4-sdk if available
+    // 2. Copy ABI from verified Base deployment on Basescan
+    // 3. Fetch ABI dynamically from Base RPC etherscan API
+    // 
+    // The actual contract interface may differ from this conceptual implementation.
+    // This is provided as a starting point and should be verified before use.
     const poolManagerAbi = [
       {
         name: 'swap',
