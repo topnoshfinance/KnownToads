@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { SwapButton } from '@/components/ui/SwapButton';
 import { Header } from '@/components/ui/Header';
 import { Loading } from '@/components/ui/Loading';
+import styles from './page.module.css';
 
 export default function ToadCardPage() {
   const params = useParams();
@@ -84,44 +85,28 @@ export default function ToadCardPage() {
   return (
     <div style={{ minHeight: '100vh' }}>
       <Header />
-      <div style={{ maxWidth: '900px', margin: '0 auto', padding: 'var(--spacing-xl)' }}>
-        <div className="toad-card" style={{ padding: 'var(--spacing-2xl)' }}>
+      <div className={styles.container}>
+        <div className={`toad-card ${styles.card}`}>
           {/* Profile Header */}
-          <div style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            alignItems: 'center', 
-            marginBottom: 'var(--spacing-xl)',
-          }}>
+          <div className={styles.profileHeader}>
             {profile.pfp_url && (
               <Image
                 src={profile.pfp_url}
                 alt={`${profile.username}'s profile`}
                 width={200}
                 height={200}
-                className="avatar avatar-lg"
-                style={{ objectFit: 'cover', marginBottom: 'var(--spacing-md)' }}
+                className={`avatar avatar-lg ${styles.profileImage}`}
               />
             )}
-            <h1 style={{ 
-              fontSize: 'var(--text-3xl)', 
-              fontWeight: 'var(--font-bold)',
-              color: 'var(--deep-blue)',
-              marginBottom: 'var(--spacing-sm)',
-            }}>
+            <h1 className={styles.profileUsername}>
               @{profile.username}
             </h1>
             <p style={{ color: 'var(--text-secondary)' }}>FID: {profile.fid}</p>
           </div>
 
           {/* Social Links */}
-          <div style={{ marginBottom: 'var(--spacing-xl)' }}>
-            <h2 style={{ 
-              fontSize: 'var(--text-2xl)', 
-              fontWeight: 'var(--font-semibold)',
-              color: 'var(--deep-blue)',
-              marginBottom: 'var(--spacing-md)',
-            }}>
+          <div className={styles.section}>
+            <h2 className={styles.sectionHeading}>
               Social Links
             </h2>
             <SocialLinks
@@ -135,37 +120,19 @@ export default function ToadCardPage() {
           </div>
 
           {/* Creator Coin */}
-          <div style={{ marginBottom: 'var(--spacing-xl)' }}>
-            <h2 style={{ 
-              fontSize: 'var(--text-2xl)', 
-              fontWeight: 'var(--font-semibold)',
-              color: 'var(--deep-blue)',
-              marginBottom: 'var(--spacing-md)',
-            }}>
+          <div className={styles.section}>
+            <h2 className={styles.sectionHeading}>
               Creator Coin
             </h2>
-            <div className="info-card" style={{ marginBottom: 'var(--spacing-md)' }}>
-              <p style={{ 
-                fontSize: 'var(--text-sm)', 
-                color: 'var(--text-secondary)',
-                marginBottom: 'var(--spacing-sm)',
-              }}>
+            <div className={`info-card ${styles.contractInfo}`}>
+              <p className={styles.contractLabel}>
                 Contract Address
               </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
-                <code style={{ 
-                  flex: 1,
-                  fontSize: 'var(--text-sm)',
-                  fontFamily: 'monospace',
-                  background: 'var(--white)',
-                  padding: 'var(--spacing-sm) var(--spacing-md)',
-                  borderRadius: 'var(--radius-sm)',
-                  border: '1px solid var(--toby-blue)',
-                  wordBreak: 'break-all',
-                }}>
+              <div className={styles.contractAddressContainer}>
+                <code className={styles.contractCode}>
                   {profile.creator_coin_address}
                 </code>
-                <Button onClick={handleCopyAddress} style={{ padding: 'var(--spacing-sm) var(--spacing-md)', fontSize: 'var(--text-sm)' }}>
+                <Button onClick={handleCopyAddress} className={styles.copyButton}>
                   {copied ? '✓' : 'Copy'}
                 </Button>
               </div>
@@ -183,12 +150,7 @@ export default function ToadCardPage() {
           </div>
 
           {/* Metadata */}
-          <div style={{ 
-            fontSize: 'var(--text-sm)', 
-            color: 'var(--text-secondary)',
-            paddingTop: 'var(--spacing-md)',
-            borderTop: '1px solid var(--toby-blue)',
-          }}>
+          <div className={styles.metadata}>
             <p>Joined: {new Date(profile.created_at).toLocaleDateString()}</p>
           </div>
         </div>
