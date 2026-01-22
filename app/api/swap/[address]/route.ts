@@ -26,14 +26,14 @@ export async function POST(
     const amountIn = parseUnits('1', 6);
 
     // Get swap transaction from 0x API
-    const swapTx = await get0xSwapTransaction(
+    const swapTxResult = await get0xSwapTransaction(
       USDC_ADDRESS,
       address as Address,
       amountIn,
       userAddress as Address
     );
 
-    if (!swapTx) {
+    if (!swapTxResult) {
       return NextResponse.json(
         { 
           error: 'No liquidity available for this token pair. The token may not be tradeable or may exist only on unsupported DEXs.',
@@ -47,9 +47,9 @@ export async function POST(
       chainId: `eip155:${process.env.NEXT_PUBLIC_BASE_CHAIN_ID || '8453'}`,
       method: 'eth_sendTransaction',
       params: {
-        to: swapTx.to,
-        data: swapTx.data,
-        value: swapTx.value,
+        to: swapTxResult.quote.to,
+        data: swapTxResult.quote.data,
+        value: swapTxResult.quote.value,
       },
     });
   } catch (error) {

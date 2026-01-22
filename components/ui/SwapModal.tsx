@@ -12,6 +12,7 @@ import {
   formatExchangeRate,
   QuoteResult,
   SwapProvider,
+  HIGH_SLIPPAGE_WARNING_BPS,
 } from '@/lib/0x-helpers';
 import { fetchTokenInfo } from '@/lib/token-helpers';
 
@@ -72,6 +73,7 @@ export function SwapModal({
   const [quote, setQuote] = useState<QuoteResult | null>(null);
   const [isLoadingQuote, setIsLoadingQuote] = useState<boolean>(false);
   const [swapTxData, setSwapTxData] = useState<{ to: string; data: string; value: string } | null>(null);
+  const [showSlippageWarning, setShowSlippageWarning] = useState<boolean>(false);
   
   // Token info state
   const [tokenInfo, setTokenInfo] = useState<{ symbol: string; decimals: number }>({
@@ -129,9 +131,16 @@ export function SwapModal({
   });
 
   // Helper function to get provider display name
-  const getProviderDisplayName = (provider?: SwapProvider): string => {
-    if (!provider) return 'Zora & 0x Protocol';
-    return provider === 'zora' ? 'Zora' : '0x Protocol';
+  const getProviderDisplay = (): string => {
+    if (!quote?.provider) return 'Zora & 0x Protocol';
+    return quote.provider === 'zora' ? 'Zora (Fallback)' : '0x Protocol';
+  };
+
+  // Helper function to get slippage display
+  const getSlippageDisplay = (): string | null => {
+    if (!quote?.slippageBps) return null;
+    const percentage = (quote.slippageBps / 100).toFixed(1);
+    return `${percentage}%`;
   };
 
   // Define executeSwap and executeApprove before the useEffects that use them
@@ -160,8 +169,15 @@ export function SwapModal({
         setError('No liquidity available for this token. The token may not be tradeable or may exist only on unsupported DEXs.');
         setQuote(null);
         setSwapTxData(null);
+        setShowSlippageWarning(false);
       } else {
         setQuote(quoteResult);
+        // Check for high slippage warning
+        if (quoteResult.highSlippageWarning) {
+          setShowSlippageWarning(true);
+        } else {
+          setShowSlippageWarning(false);
+        }
         // Note: We'll fetch the full transaction data when executing the swap
         setSwapTxData(null);
       }
@@ -589,21 +605,36 @@ export function SwapModal({
                       tokenInfo.decimals
                     )}
                   </div>
+                  
+                  {/* Provider Display */}
                   <div style={{ 
                     fontSize: 'var(--text-xs)',
                     color: 'var(--text-secondary)',
                     marginTop: 'var(--spacing-xs)',
                   }}>
-                    Slippage: 3%
+                    <span style={{ fontWeight: 'var(--font-semibold)' }}>Provider:</span> {getProviderDisplay()}
                   </div>
-                  {quote.provider && (
+                  
+                  {/* Slippage Display */}
+                  {quote.slippageBps && (
                     <div style={{ 
                       fontSize: 'var(--text-xs)',
-                      color: 'var(--toby-blue)',
+                      color: quote.highSlippageWarning ? '#ea580c' : 'var(--text-secondary)',
                       marginTop: 'var(--spacing-xs)',
-                      fontWeight: 'var(--font-semibold)',
+                      fontWeight: quote.highSlippageWarning ? 'var(--font-semibold)' : 'normal',
                     }}>
-                      Provider: {getProviderDisplayName(quote.provider)}
+                      <span style={{ fontWeight: 'var(--font-semibold)' }}>Slippage:</span> {getSlippageDisplay()}
+                    </div>
+                  )}
+                  
+                  {/* Price Impact Display */}
+                  {quote.priceImpact && (
+                    <div style={{ 
+                      fontSize: 'var(--text-xs)',
+                      color: 'var(--text-secondary)',
+                      marginTop: 'var(--spacing-xs)',
+                    }}>
+                      <span style={{ fontWeight: 'var(--font-semibold)' }}>Price Impact:</span> {quote.priceImpact}%
                     </div>
                   )}
                 </>
@@ -628,6 +659,45 @@ export function SwapModal({
                 {tokenAddress}
               </div>
             </div>
+
+            {/* High Slippage Warning */}
+            {showSlippageWarning && (
+              <div style={{
+                marginTop: 'var(--spacing-md)',
+                padding: 'var(--spacing-md)',
+                background: '#fff7ed',
+                border: '1px solid #fb923c',
+                borderRadius: 'var(--radius-md)',
+                marginBottom: 'var(--spacing-lg)',
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 'var(--spacing-sm)',
+                }}>
+                  <span style={{ fontSize: '20px', lineHeight: '1' }}>⚠️</span>
+                  <div style={{ flex: 1 }}>
+                    <h4 style={{
+                      fontSize: 'var(--text-sm)',
+                      fontWeight: 'var(--font-semibold)',
+                      color: '#9a3412',
+                      marginBottom: 'var(--spacing-xs)',
+                      marginTop: 0,
+                    }}>
+                      High Slippage Warning
+                    </h4>
+                    <p style={{
+                      fontSize: 'var(--text-xs)',
+                      color: '#9a3412',
+                      margin: 0,
+                      lineHeight: '1.4',
+                    }}>
+                      This swap requires {getSlippageDisplay()} slippage due to low liquidity. Your trade may execute at a significantly different price. Consider using a smaller amount or waiting for more liquidity.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Processing Status */}
             {step === 'approving' && (
@@ -702,7 +772,7 @@ export function SwapModal({
               color: 'var(--text-secondary)',
               textAlign: 'center',
             }}>
-              Swaps powered by {getProviderDisplayName(quote?.provider)}
+              Swaps powered by {getProviderDisplay()}
             </div>
           </>
         )}
