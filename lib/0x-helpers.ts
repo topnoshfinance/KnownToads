@@ -1,4 +1,5 @@
 import { Address } from 'viem';
+import { getZoraQuote, getZoraSwapTransaction, type ZoraSwapQuote } from './zora-swap-helpers';
 
 // 0x Exchange Proxy contract on Base
 export const ZEROX_EXCHANGE_PROXY = '0xDef1C0ded9bec7F1a1670819833240f027b25EfF' as Address;
@@ -14,6 +15,11 @@ const ZEROX_API_BASE_URL = 'https://api.0x.org';
 
 // Slippage tolerance: 3%
 export const SLIPPAGE_PERCENTAGE = 0.03;
+
+/**
+ * Swap provider type
+ */
+export type SwapProvider = 'zora' | '0x';
 
 /**
  * 0x API quote response type
@@ -39,6 +45,7 @@ export interface QuoteResult {
   amountOut: bigint;
   price: string;
   estimatedGas: string;
+  provider?: SwapProvider;
 }
 
 /**
@@ -216,4 +223,96 @@ export function formatExchangeRate(
   }
   
   return `1 ${inputSymbol} ≈ ${formattedRate} ${outputSymbol}`;
+}
+
+/**
+ * Smart routing: Get swap quote from Zora first, fallback to 0x
+ * @param sellToken - Token to sell (e.g., USDC)
+ * @param buyToken - Token to buy
+ * @param sellAmount - Amount to sell in base units
+ * @param takerAddress - Address of the user making the swap
+ * @returns Quote data with provider info or null if no liquidity
+ */
+export async function getSwapQuote(
+  sellToken: Address,
+  buyToken: Address,
+  sellAmount: bigint,
+  takerAddress: Address
+): Promise<QuoteResult | null> {
+  // Try Zora first
+  try {
+    const zoraQuote = await getZoraQuote(sellToken, buyToken, sellAmount, takerAddress);
+    if (zoraQuote && zoraQuote.buyAmount) {
+      return {
+        amountOut: BigInt(zoraQuote.buyAmount),
+        price: '0', // Zora doesn't provide price field
+        estimatedGas: zoraQuote.gas || '0',
+        provider: 'zora',
+      };
+    }
+  } catch (error) {
+    console.log('Zora quote failed, trying 0x...', error);
+  }
+
+  // Fallback to 0x
+  try {
+    const zeroXQuote = await get0xQuote(sellToken, buyToken, sellAmount, takerAddress);
+    if (zeroXQuote) {
+      return {
+        ...zeroXQuote,
+        provider: '0x',
+      };
+    }
+  } catch (error) {
+    console.error('0x quote also failed:', error);
+  }
+
+  return null;
+}
+
+/**
+ * Smart routing: Get swap transaction from Zora first, fallback to 0x
+ * @param sellToken - Token to sell (e.g., USDC)
+ * @param buyToken - Token to buy
+ * @param sellAmount - Amount to sell in base units
+ * @param takerAddress - Address of the user making the swap
+ * @returns Transaction data with provider or null if no liquidity
+ */
+export async function getSwapTransaction(
+  sellToken: Address,
+  buyToken: Address,
+  sellAmount: bigint,
+  takerAddress: Address
+): Promise<{ to: string; data: string; value: string; provider: SwapProvider } | null> {
+  // Try Zora first
+  try {
+    const zoraQuote = await getZoraSwapTransaction(sellToken, buyToken, sellAmount, takerAddress);
+    if (zoraQuote && zoraQuote.to && zoraQuote.data) {
+      return {
+        to: zoraQuote.to,
+        data: zoraQuote.data,
+        value: zoraQuote.value || '0',
+        provider: 'zora',
+      };
+    }
+  } catch (error) {
+    console.log('Zora transaction failed, trying 0x...', error);
+  }
+
+  // Fallback to 0x
+  try {
+    const zeroXQuote = await get0xSwapTransaction(sellToken, buyToken, sellAmount, takerAddress);
+    if (zeroXQuote) {
+      return {
+        to: zeroXQuote.to,
+        data: zeroXQuote.data,
+        value: zeroXQuote.value,
+        provider: '0x',
+      };
+    }
+  } catch (error) {
+    console.error('0x transaction also failed:', error);
+  }
+
+  return null;
 }

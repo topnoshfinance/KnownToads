@@ -178,7 +178,6 @@ export default function ToadCardPage() {
             <SwapButton
               tokenAddress={profile.creator_coin_address}
               chainId={profile.chain_id}
-              tokenSymbol={profile.username}
               style={{ width: '100%' }}
             />
           </div>

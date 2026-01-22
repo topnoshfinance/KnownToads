@@ -36,7 +36,6 @@ export function ToadCard({ profile }: ToadCardProps) {
             <SwapButton
               tokenAddress={profile.creator_coin_address}
               chainId={profile.chain_id}
-              tokenSymbol={profile.username}
               compactMode={true}
               style={{
                 marginTop: 'var(--spacing-xs)',
