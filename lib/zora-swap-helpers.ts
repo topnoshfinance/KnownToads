@@ -4,6 +4,9 @@ import { Address } from 'viem';
 const ZORA_API_BASE_URL = 'https://api-sdk.zora.engineering';
 const BASE_CHAIN_ID = 8453;
 
+// Slippage tolerance: 3%
+const SLIPPAGE_PERCENTAGE = 0.03;
+
 /**
  * Zora API swap quote response type
  */
@@ -42,7 +45,7 @@ export async function getZoraQuote(
       amount: sellAmount.toString(),
       chain: BASE_CHAIN_ID,
       userAddress: takerAddress,
-      slippage: 0.03, // 3% slippage
+      slippage: SLIPPAGE_PERCENTAGE,
     };
 
     const apiKey = process.env.ZORA_API_KEY;
@@ -55,7 +58,7 @@ export async function getZoraQuote(
     }
 
     // Log the request for debugging
-    console.log('Zora API Request:', {
+    console.debug('Zora API Request:', {
       url: `${ZORA_API_BASE_URL}/quote`,
       method: 'POST',
       body: requestBody,
@@ -71,7 +74,7 @@ export async function getZoraQuote(
     );
 
     // Log response status for debugging
-    console.log('Zora API Response Status:', response.status);
+    console.debug('Zora API Response Status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -92,7 +95,7 @@ export async function getZoraQuote(
     const quote: ZoraSwapQuote = await response.json();
     
     // Log successful response for debugging
-    console.log('Zora API successful response:', {
+    console.debug('Zora API successful response:', {
       chainId: quote.chainId,
       sellToken: quote.sellToken,
       buyToken: quote.buyToken,
