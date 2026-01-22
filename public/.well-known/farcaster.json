@@ -14,5 +14,23 @@
     "buttonTitle": "🐸 Join the Gang",
     "splashImageUrl": "https://known-toads.vercel.app/splash.png",
     "splashBackgroundColor": "#dcfce7"
-  }
+  },
+  "preview": {
+    "title": "Known Toads",
+    "description": "🐸 Hop in the pond",
+    "media": [
+      {
+        "url": "https://known-toads.vercel.app/og-image.png",
+        "type": "image/png"
+      }
+    ]
+  },
+  "embeds": [
+    {
+      "type": "card",
+      "title": "Known Toads",
+      "description": "🐸 Join the Toadgang",
+      "icon": "https://known-toads.vercel.app/logo.png"
+    }
+  ]
 }

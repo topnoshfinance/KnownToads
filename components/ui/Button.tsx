@@ -6,7 +6,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 export function Button({ variant = 'primary', children, className = '', ...props }: ButtonProps) {
-  const baseClass = variant === 'primary' ? 'btn-primary' : '';
+  const baseClass = variant === 'primary' ? 'btn-primary' : 'btn-secondary';
   
   return (
     <button 

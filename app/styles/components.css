@@ -44,6 +44,33 @@
   transform: translateY(0);
 }
 
+.btn-secondary {
+  background: var(--white);
+  color: var(--toby-blue);
+  font-size: var(--text-lg);
+  font-weight: var(--font-bold);
+  padding: var(--spacing-md) var(--spacing-xl);
+  border-radius: var(--radius-md);
+  border: 2px solid var(--toby-blue);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-secondary:hover {
+  background: linear-gradient(135deg, var(--toby-blue) 0%, var(--purple-accent) 100%);
+  color: var(--white);
+  border-color: var(--purple-accent);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.btn-secondary:active {
+  transform: translateY(0);
+}
+
 .btn-buy-compact {
   background: linear-gradient(135deg, var(--toby-blue) 0%, var(--purple-accent) 100%);
   color: var(--white);
