@@ -2,9 +2,9 @@
 
 ## Current Status
 
-The following images are currently using **temporary placeholders** copied from `IMG_20260121_143212.png`:
+The following images are currently using **temporary placeholders**:
 
-- ✅ `logo.png` - Using IMG_20260121_143212.png (FINAL)
+- ✅ `logo.png` - Created from IMG_20260121_143212.png (FINAL)
 - ⚠️ `splash.png` - **TEMPORARY** placeholder (needs proper design)
 - ⚠️ `og-image.png` - **TEMPORARY** placeholder (needs proper design)
 
@@ -44,7 +44,7 @@ The following images are currently using **temporary placeholders** copied from 
 ## Design Assets
 
 **Existing assets you can reference:**
-- `logo.png` / `IMG_20260121_143212.png` - Main toad logo
+- `logo.png` (copied from IMG_20260121_143212.png) - Main toad logo
 - `favicon.svg` - Toad favicon
 - Brand colors: Green theme (e.g., `#dcfce7` for backgrounds)
 
