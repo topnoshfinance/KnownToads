@@ -1,0 +1,130 @@
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--spacing-xl);
+}
+
+.card {
+  padding: var(--spacing-2xl);
+}
+
+.profileHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: var(--spacing-xl);
+}
+
+.profileImage {
+  width: 200px;
+  height: 200px;
+  margin-bottom: var(--spacing-md);
+  object-fit: cover;
+}
+
+.profileUsername {
+  font-size: var(--text-3xl);
+  font-weight: var(--font-bold);
+  color: var(--deep-blue);
+  margin-bottom: var(--spacing-sm);
+}
+
+.section {
+  margin-bottom: var(--spacing-xl);
+}
+
+.sectionHeading {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-semibold);
+  color: var(--deep-blue);
+  margin-bottom: var(--spacing-md);
+}
+
+.contractInfo {
+  margin-bottom: var(--spacing-md);
+}
+
+.contractLabel {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.contractAddressContainer {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.contractCode {
+  flex: 1;
+  font-size: var(--text-sm);
+  font-family: monospace;
+  background: var(--white);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--toby-blue);
+  word-break: break-all;
+}
+
+.copyButton {
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--text-sm);
+}
+
+.metadata {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--toby-blue);
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: var(--spacing-sm);
+  }
+
+  .card {
+    padding: var(--spacing-lg);
+  }
+
+  .profileHeader {
+    margin-bottom: var(--spacing-md);
+  }
+
+  .profileImage {
+    width: 120px;
+    height: 120px;
+  }
+
+  .profileUsername {
+    font-size: var(--text-2xl);
+  }
+
+  .section {
+    margin-bottom: var(--spacing-md);
+  }
+
+  .sectionHeading {
+    font-size: var(--text-xl);
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .contractInfo {
+    margin-bottom: var(--spacing-sm);
+  }
+  
+  .contractAddressContainer {
+    gap: var(--spacing-sm);
+  }
+  
+  .contractCode {
+    font-size: var(--text-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+  }
+  
+  .copyButton {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--text-xs);
+  }
+}
