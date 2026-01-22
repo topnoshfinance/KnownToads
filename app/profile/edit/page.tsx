@@ -98,6 +98,7 @@ export default function ProfileEditPage() {
         pfp_cached_at: new Date().toISOString(),
         creator_coin_address: formData.creator_coin_address,
         chain_id: validationResult.chainId || 8453,
+        bio: formData.bio || null,
         x_handle: cleanedXHandle,
         telegram_handle: normalizedTelegram,
         zora_page_url: formData.zora_page_url || null,

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import sdk from '@farcaster/frame-sdk';
 import { Button } from '@/components/ui/Button';
 
 interface ShareButtonProps {
@@ -9,13 +10,6 @@ interface ShareButtonProps {
   variant?: 'primary' | 'secondary';
   style?: React.CSSProperties;
   className?: string;
-}
-
-// Type definition for Farcaster window interface
-interface FarcasterWindow extends Window {
-  farcaster?: {
-    share: (data: { url: string; text: string }) => void;
-  };
 }
 
 export function ShareButton({ 
@@ -27,34 +21,36 @@ export function ShareButton({
 }: ShareButtonProps) {
   const handleShare = async () => {
     try {
-      // Use Farcaster's native share API as required by the platform
-      const farcasterWindow = typeof window !== 'undefined' ? (window as FarcasterWindow) : null;
+      // Build Warpcast compose URL with text and embedded frame
+      const shareText = encodeURIComponent(text);
+      const embedUrl = encodeURIComponent(url);
+      const warpcastComposeUrl = `https://warpcast.com/~/compose?text=${shareText}&embeds[]=${embedUrl}`;
       
-      if (farcasterWindow?.farcaster?.share) {
-        farcasterWindow.farcaster.share({
-          url: url,
-          text: text
-        });
-      } else {
-        console.warn('Farcaster share API not available');
-        // Fallback to native share API if available
-        if (navigator.share) {
-          try {
-            await navigator.share({ 
-              url,
-              text 
-            });
-          } catch (shareError) {
-            console.error('Error with native share:', shareError);
-          }
-        } else if (navigator.clipboard) {
-          // Last resort: copy to clipboard with proper error handling
-          try {
-            await navigator.clipboard.writeText(url);
-            alert('Link copied to clipboard!');
-          } catch (clipboardError) {
-            console.error('Error copying to clipboard:', clipboardError);
-          }
+      // Try to use SDK openUrl for in-app experience
+      if (sdk?.actions?.openUrl) {
+        try {
+          await sdk.actions.openUrl(warpcastComposeUrl);
+          return;
+        } catch (sdkError) {
+          console.warn('SDK openUrl not available, falling back to window.open:', sdkError);
+        }
+      }
+      
+      // Fallback to window.open for web browsers
+      if (typeof window !== 'undefined') {
+        const opened = window.open(warpcastComposeUrl, '_blank', 'noopener,noreferrer');
+        if (opened) {
+          return;
+        }
+      }
+      
+      // Last resort: copy to clipboard
+      if (navigator.clipboard) {
+        try {
+          await navigator.clipboard.writeText(url);
+          alert('Link copied to clipboard!');
+        } catch (clipboardError) {
+          console.error('Error copying to clipboard:', clipboardError);
         }
       }
     } catch (error) {
