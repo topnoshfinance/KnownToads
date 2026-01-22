@@ -7,6 +7,8 @@ import { useAccount, useConnect } from 'wagmi';
 import { frameConnector } from '@/lib/wagmi';
 import { ProfileForm } from '@/components/profile/ProfileForm';
 import { Button } from '@/components/ui/Button';
+import { ShareButton } from '@/components/ShareButton';
+import { NotificationPrompt } from '@/components/NotificationPrompt';
 import { Header } from '@/components/ui/Header';
 import { ProfileFormData } from '@/types/profile';
 import { supabase } from '@/lib/supabase';
@@ -106,9 +108,11 @@ export default function ProfileEditPage() {
       if (dbError) throw dbError;
 
       setSuccess(true);
+      
+      // Show success temporarily, then redirect
       setTimeout(() => {
         router.push(`/toad/${farcasterContext.fid}`);
-      }, 1500);
+      }, 3000);
     } catch (err) {
       console.error('Error saving profile:', err);
       setError(err instanceof Error ? err.message : 'Failed to save profile');
@@ -203,7 +207,22 @@ export default function ProfileEditPage() {
               borderRadius: 'var(--radius-md)',
               marginBottom: 'var(--spacing-lg)',
             }}>
-              Profile saved successfully! Redirecting...
+              <p style={{ marginBottom: 'var(--spacing-md)' }}>
+                Profile saved successfully! Redirecting...
+              </p>
+              <div style={{ 
+                display: 'flex', 
+                gap: 'var(--spacing-sm)',
+                flexDirection: 'column',
+                alignItems: 'center',
+              }}>
+                <ShareButton
+                  url={`https://farcaster.xyz/miniapps/bjXOyJfzJCxU/knowntoads/toad/${farcasterContext.fid}`}
+                  text="🐸 Share My Profile"
+                  variant="primary"
+                />
+                <NotificationPrompt />
+              </div>
             </div>
           )}
 
