@@ -8,6 +8,7 @@ import { farcasterFrame as frameConnector } from '@farcaster/frame-wagmi-connect
 // Configure wagmi with Farcaster Frame connector
 export const config = createConfig({
   chains: [base],
+  connectors: [frameConnector()],
   transports: {
     [base.id]: http(),
   },
