@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react';
 import { useConnect } from 'wagmi';
-import { frameConnector } from '@/lib/wagmi';
 
 /**
  * Component to automatically connect to Farcaster wallet when in Frame context

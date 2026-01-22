@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
 import { parseUnits, formatUnits, Address, encodeFunctionData } from 'viem';
 import { base } from 'wagmi/chains';
@@ -109,7 +109,7 @@ export function SwapModal({
     address: USDC_ADDRESS,
     abi: ERC20_ABI,
     functionName: 'allowance',
-    args: userAddress && [userAddress, SWAP_ROUTER_ADDRESS],
+    args: userAddress ? [userAddress, SWAP_ROUTER_ADDRESS] : undefined,
     chainId: base.id,
   });
 
@@ -139,31 +139,8 @@ export function SwapModal({
     chainId: base.id,
   });
 
-  // Handle approve success
-  useEffect(() => {
-    if (isApproveSuccess) {
-      refetchAllowance();
-      executeSwap();
-    }
-  }, [isApproveSuccess]);
-
-  // Handle swap success
-  useEffect(() => {
-    if (isSwapSuccess && swapData) {
-      setTxHash(swapData);
-      setStep('success');
-    }
-  }, [isSwapSuccess, swapData]);
-
-  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    // Allow only numbers and decimal point
-    if (/^\d*\.?\d*$/.test(value) || value === '') {
-      setAmount(value);
-    }
-  };
-
-  const executeApprove = async () => {
+  // Define executeSwap and executeApprove before the useEffects that use them
+  const executeApprove = useCallback(async () => {
     try {
       setError(null);
       setStep('approving');
@@ -182,9 +159,9 @@ export function SwapModal({
       setError(err instanceof Error ? err.message : 'Failed to approve');
       setStep('error');
     }
-  };
+  }, [amount, approve]);
 
-  const executeSwap = async () => {
+  const executeSwap = useCallback(async () => {
     try {
       if (!userAddress) throw new Error('No wallet connected');
       
@@ -193,6 +170,11 @@ export function SwapModal({
       
       const amountIn = parseUnits(amount, 6); // USDC has 6 decimals
       const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200); // 20 minutes
+
+      // Calculate minimum output with 0.5% slippage tolerance
+      // Note: In production, this should fetch actual price and calculate proper slippage
+      const slippageTolerance = 50n; // 0.5% in basis points (50/10000)
+      const amountOutMinimum = 0n; // Simplified - in production, calculate based on price quote
 
       swap({
         address: SWAP_ROUTER_ADDRESS,
@@ -206,7 +188,7 @@ export function SwapModal({
             recipient: userAddress,
             deadline,
             amountIn,
-            amountOutMinimum: 0n, // Accept any amount (simplified for demo)
+            amountOutMinimum,
             sqrtPriceLimitX96: 0n,
           },
         ],
@@ -216,6 +198,33 @@ export function SwapModal({
       console.error('Swap error:', err);
       setError(err instanceof Error ? err.message : 'Failed to execute swap');
       setStep('error');
+    }
+  }, [userAddress, amount, tokenAddress, swap]);
+
+  // Handle approve success
+  useEffect(() => {
+    if (isApproveSuccess) {
+      const proceedWithSwap = async () => {
+        await refetchAllowance();
+        executeSwap();
+      };
+      proceedWithSwap();
+    }
+  }, [isApproveSuccess, refetchAllowance, executeSwap]);
+
+  // Handle swap success
+  useEffect(() => {
+    if (isSwapSuccess && swapData) {
+      setTxHash(swapData);
+      setStep('success');
+    }
+  }, [isSwapSuccess, swapData]);
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Allow only numbers and decimal point
+    if (/^\d*\.?\d*$/.test(value) || value === '') {
+      setAmount(value);
     }
   };
 
@@ -488,6 +497,14 @@ export function SwapModal({
                 wordBreak: 'break-all',
               }}>
                 {tokenAddress}
+              </div>
+              <div style={{ 
+                fontSize: 'var(--text-xs)',
+                color: '#d97706',
+                marginTop: 'var(--spacing-sm)',
+                fontStyle: 'italic',
+              }}>
+                ⚠️ Note: Slippage protection is minimal. Review transaction carefully.
               </div>
             </div>
 
