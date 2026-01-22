@@ -5,6 +5,7 @@ import './styles/animations.css';
 import './styles/components.css';
 import { Providers } from '@/lib/wagmi';
 import { FrameSDKProvider } from '@/components/FrameSDKProvider';
+import { WalletAutoConnect } from '@/components/WalletAutoConnect';
 
 export const metadata: Metadata = {
   title: 'KnownToads - Toadgang Directory',
@@ -25,7 +26,10 @@ export default function RootLayout({
     <html lang="en">
       <body style={{ fontFamily: 'var(--font-body)' }}>
         <FrameSDKProvider>
-          <Providers>{children}</Providers>
+          <Providers>
+            <WalletAutoConnect />
+            {children}
+          </Providers>
         </FrameSDKProvider>
       </body>
     </html>
