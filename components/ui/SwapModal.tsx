@@ -264,14 +264,18 @@ export function SwapModal({
 
   // Fetch quote when amount changes
   useEffect(() => {
+    // Early return if conditions not met
+    if (!isConnected || chain?.id !== base.id || !amount || parseFloat(amount) <= 0) {
+      setQuote(null);
+      return;
+    }
+
     const timer = setTimeout(() => {
-      if (isConnected && chain?.id === base.id) {
-        fetchQuote();
-      }
+      fetchQuote();
     }, 500); // Debounce for 500ms
 
     return () => clearTimeout(timer);
-  }, [amount, isConnected, chain, fetchQuote]);
+  }, [amount, isConnected, chain?.id, fetchQuote]);
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;

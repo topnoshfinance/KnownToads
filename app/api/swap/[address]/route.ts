@@ -55,7 +55,6 @@ export async function POST(
     // Create a public client to fetch quote
     const rpcUrl = process.env.BASE_RPC_URL;
     if (!rpcUrl) {
-      console.error('BASE_RPC_URL environment variable is not set');
       return NextResponse.json(
         { error: 'Server configuration error' },
         { status: 500 }

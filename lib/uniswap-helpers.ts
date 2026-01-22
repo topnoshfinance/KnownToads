@@ -14,7 +14,7 @@ export const QUOTER_V2_ABI = [
   {
     name: 'quoteExactInputSingle',
     type: 'function',
-    stateMutability: 'nonpayable',
+    stateMutability: 'view',
     inputs: [
       {
         name: 'params',
@@ -63,14 +63,14 @@ export interface QuoteResult {
  * @param tokenIn - Input token address
  * @param tokenOut - Output token address
  * @param amountIn - Amount of input tokens
- * @param publicClient - Viem public client
+ * @param publicClient - Viem public client (typed as any due to viem v2 type compatibility issues)
  * @returns Quote result with amount out and fee tier, or null if no pool found
  */
 export async function findPoolAndGetQuote(
   tokenIn: Address,
   tokenOut: Address,
   amountIn: bigint,
-  publicClient: any
+  publicClient: any // eslint-disable-line @typescript-eslint/no-explicit-any
 ): Promise<QuoteResult | null> {
   for (const fee of FEE_TIERS) {
     try {
