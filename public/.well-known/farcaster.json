@@ -1,5 +1,10 @@
 {
-  "miniapp": {
+  "accountAssociation": {
+    "header": "eyJmaWQiOjg5OTg2NSwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweDk0MDBjQWIyNDAwMzdEQjA2ODQ0QzQ3YkJBQjIyOEZEY2NCMkMyQkQifQ",
+    "payload": "eyJkb21haW4iOiJrbm93bi10b2Fkcy52ZXJjZWwuYXBwIn0",
+    "signature": "vBYxVYMBi+zrqFTuFoVSM0AQDqanfpbs0s4wVDHPgd5pUELIJx7jSeJpn31t1/pfKtyhjgzMiJqM0ssITUOqqBs="
+  },
+  "frame": {
     "version": "1",
     "name": "KnownToads",
     "iconUrl": "https://known-toads.vercel.app/logo.png",
@@ -7,14 +12,6 @@
     "imageUrl": "https://known-toads.vercel.app/og-image.png",
     "buttonTitle": "🐸 Join the Gang",
     "splashImageUrl": "https://known-toads.vercel.app/splash.png",
-    "splashBackgroundColor": "#dcfce7",
-    "requiredChains": [
-      "eip155:8453"
-    ],
-    "requiredCapabilities": [
-      "actions.signIn",
-      "wallet.getEthereumProvider",
-      "actions.swapToken"
-    ]
+    "splashBackgroundColor": "#dcfce7"
   }
 }
