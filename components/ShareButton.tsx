@@ -11,6 +11,13 @@ interface ShareButtonProps {
   className?: string;
 }
 
+// Type definition for Farcaster window interface
+interface FarcasterWindow extends Window {
+  farcaster?: {
+    share: (data: { url: string; text: string }) => void;
+  };
+}
+
 export function ShareButton({ 
   url, 
   text = '🐸 Share', 
@@ -21,8 +28,10 @@ export function ShareButton({
   const handleShare = async () => {
     try {
       // Use Farcaster's native share API as required by the platform
-      if (typeof window !== 'undefined' && (window as any).farcaster?.share) {
-        (window as any).farcaster.share({
+      const farcasterWindow = typeof window !== 'undefined' ? (window as FarcasterWindow) : null;
+      
+      if (farcasterWindow?.farcaster?.share) {
+        farcasterWindow.farcaster.share({
           url: url,
           text: text
         });
@@ -38,10 +47,14 @@ export function ShareButton({
           } catch (shareError) {
             console.error('Error with native share:', shareError);
           }
-        } else {
-          // Last resort: copy to clipboard
-          await navigator.clipboard.writeText(url);
-          alert('Link copied to clipboard!');
+        } else if (navigator.clipboard) {
+          // Last resort: copy to clipboard with proper error handling
+          try {
+            await navigator.clipboard.writeText(url);
+            alert('Link copied to clipboard!');
+          } catch (clipboardError) {
+            console.error('Error copying to clipboard:', clipboardError);
+          }
         }
       }
     } catch (error) {
