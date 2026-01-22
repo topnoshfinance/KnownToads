@@ -64,6 +64,7 @@ A Farcaster mini app that serves as a community directory where toadgang members
    - `TOADGOD_FID` - The FID of @toadgod1017
    - `BASE_RPC_URL` - Base RPC endpoint (default: https://mainnet.base.org)
    - `ZEROX_API_KEY` - 0x API key (optional, for higher rate limits)
+   - `ZORA_API_KEY` - Zora API key for creator coin swaps (get from https://zora.co/developers)
 
 5. **Add required images**
    
@@ -184,12 +185,18 @@ When users add a creator coin address, the app:
 
 ### Farcaster Native Swap
 
-The "Buy 1 USDC" button triggers a Farcaster Frame transaction:
-1. User clicks button on Toad Card
-2. API generates transaction calldata using 0x Protocol swap aggregator
-3. Farcaster wallet prompts user to approve
-4. Transaction executes on Base with optimal DEX routing
-5. User receives creator coin tokens
+The swap functionality provides seamless token swaps with smart routing:
+1. User enters amount and clicks swap button
+2. App fetches real token symbol and decimals from the contract
+3. Smart routing tries Zora API first (for Uniswap V4 pools), then falls back to 0x Protocol
+4. Swap quote displays which provider is being used
+5. User approves USDC (if needed) and executes swap
+6. Transaction executes on Base with optimal routing
+7. User receives creator coin tokens
+
+**Provider Priority:**
+- **Primary**: Zora API - Best for Zora creator coins with Uniswap V4 liquidity
+- **Fallback**: 0x Protocol - Aggregates liquidity from other DEXs on Base
 
 ## Deployment
 

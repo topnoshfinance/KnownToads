@@ -7,11 +7,13 @@ import { base } from 'wagmi/chains';
 import {
   ZEROX_EXCHANGE_PROXY,
   USDC_ADDRESS,
-  get0xQuote,
-  get0xSwapTransaction,
+  getSwapQuote,
+  getSwapTransaction,
   formatExchangeRate,
   QuoteResult,
+  SwapProvider,
 } from '@/lib/0x-helpers';
+import { fetchTokenInfo } from '@/lib/token-helpers';
 
 // ERC-20 ABI for approve function
 const ERC20_ABI = [
@@ -70,6 +72,13 @@ export function SwapModal({
   const [quote, setQuote] = useState<QuoteResult | null>(null);
   const [isLoadingQuote, setIsLoadingQuote] = useState<boolean>(false);
   const [swapTxData, setSwapTxData] = useState<{ to: string; data: string; value: string } | null>(null);
+  
+  // Token info state
+  const [tokenInfo, setTokenInfo] = useState<{ symbol: string; decimals: number }>({
+    symbol: tokenSymbol || 'TOKEN',
+    decimals: 18,
+  });
+  const [isLoadingTokenInfo, setIsLoadingTokenInfo] = useState<boolean>(false);
 
   const { address: userAddress, isConnected, chain } = useAccount();
   
@@ -119,6 +128,12 @@ export function SwapModal({
     chainId: base.id,
   });
 
+  // Helper function to get provider display name
+  const getProviderDisplayName = (provider?: SwapProvider): string => {
+    if (!provider) return 'Zora & 0x Protocol';
+    return provider === 'zora' ? 'Zora' : '0x Protocol';
+  };
+
   // Define executeSwap and executeApprove before the useEffects that use them
   const fetchQuote = useCallback(async () => {
     if (!userAddress || !amount || parseFloat(amount) <= 0) {
@@ -133,7 +148,8 @@ export function SwapModal({
 
       const amountIn = parseUnits(amount, 6); // USDC has 6 decimals
       
-      const quoteResult = await get0xQuote(
+      // Use smart routing: Try Zora first, fallback to 0x
+      const quoteResult = await getSwapQuote(
         USDC_ADDRESS,
         tokenAddress as Address,
         amountIn,
@@ -190,8 +206,8 @@ export function SwapModal({
       
       const amountIn = parseUnits(amount, 6); // USDC has 6 decimals
 
-      // Get swap transaction from 0x API
-      const swapTx = await get0xSwapTransaction(
+      // Get swap transaction using smart routing (Zora first, then 0x)
+      const swapTx = await getSwapTransaction(
         USDC_ADDRESS,
         tokenAddress as Address,
         amountIn,
@@ -199,10 +215,10 @@ export function SwapModal({
       );
 
       if (!swapTx) {
-        throw new Error('Failed to get swap transaction from 0x API');
+        throw new Error('Failed to get swap transaction. No liquidity available.');
       }
 
-      // Send the transaction using the data from 0x
+      // Send the transaction using the data from the swap provider
       sendSwapTx({
         to: swapTx.to as Address,
         data: swapTx.data as `0x${string}`,
@@ -215,6 +231,25 @@ export function SwapModal({
       setStep('error');
     }
   }, [userAddress, amount, tokenAddress, quote, sendSwapTx]);
+
+  // Fetch token info when modal opens
+  useEffect(() => {
+    if (isOpen && tokenAddress) {
+      const loadTokenInfo = async () => {
+        setIsLoadingTokenInfo(true);
+        try {
+          const info = await fetchTokenInfo(tokenAddress as Address);
+          setTokenInfo(info);
+        } catch (err) {
+          console.error('Error fetching token info:', err);
+          // Keep default values
+        } finally {
+          setIsLoadingTokenInfo(false);
+        }
+      };
+      loadTokenInfo();
+    }
+  }, [isOpen, tokenAddress]);
 
   // Handle approve success
   useEffect(() => {
@@ -383,7 +418,7 @@ export function SwapModal({
               color: 'var(--text-secondary)', 
               marginBottom: 'var(--spacing-lg)',
             }}>
-              You swapped {amount} USDC for {tokenSymbol}
+              You swapped {amount} USDC for {tokenInfo.symbol}
             </p>
             {txHash && (
               <a
@@ -521,24 +556,24 @@ export function SwapModal({
                 You will receive
               </div>
               
-              {isLoadingQuote && (
+              {(isLoadingQuote || isLoadingTokenInfo) && (
                 <div style={{ 
                   fontSize: 'var(--text-md)',
                   color: 'var(--deep-blue)',
                   fontStyle: 'italic',
                 }}>
-                  ⏳ Fetching price...
+                  ⏳ {isLoadingTokenInfo ? 'Loading token info...' : 'Fetching price...'}
                 </div>
               )}
               
-              {!isLoadingQuote && quote && (
+              {!isLoadingQuote && !isLoadingTokenInfo && quote && (
                 <>
                   <div style={{ 
                     fontSize: 'var(--text-lg)',
                     fontWeight: 'var(--font-semibold)',
                     color: 'var(--deep-blue)',
                   }}>
-                    ≈ {formatUnits(quote.amountOut, 18)} {tokenSymbol}
+                    ≈ {formatUnits(quote.amountOut, tokenInfo.decimals)} {tokenInfo.symbol}
                   </div>
                   <div style={{ 
                     fontSize: 'var(--text-xs)',
@@ -549,7 +584,9 @@ export function SwapModal({
                       parseUnits(amount || '0', 6),
                       quote.amountOut,
                       'USDC',
-                      tokenSymbol
+                      tokenInfo.symbol,
+                      6,
+                      tokenInfo.decimals
                     )}
                   </div>
                   <div style={{ 
@@ -559,16 +596,26 @@ export function SwapModal({
                   }}>
                     Slippage: 3%
                   </div>
+                  {quote.provider && (
+                    <div style={{ 
+                      fontSize: 'var(--text-xs)',
+                      color: 'var(--toby-blue)',
+                      marginTop: 'var(--spacing-xs)',
+                      fontWeight: 'var(--font-semibold)',
+                    }}>
+                      Provider: {getProviderDisplayName(quote.provider)}
+                    </div>
+                  )}
                 </>
               )}
               
-              {!isLoadingQuote && !quote && (
+              {!isLoadingQuote && !isLoadingTokenInfo && !quote && (
                 <div style={{ 
                   fontSize: 'var(--text-md)',
                   fontWeight: 'var(--font-semibold)',
                   color: 'var(--deep-blue)',
                 }}>
-                  {tokenSymbol}
+                  {tokenInfo.symbol}
                 </div>
               )}
               
@@ -655,7 +702,7 @@ export function SwapModal({
               color: 'var(--text-secondary)',
               textAlign: 'center',
             }}>
-              Swaps powered by 0x Protocol
+              Swaps powered by {getProviderDisplayName(quote?.provider)}
             </div>
           </>
         )}
