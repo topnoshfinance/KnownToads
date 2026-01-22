@@ -11,6 +11,13 @@ export function FrameSDKProvider({ children }: { children: React.ReactNode }) {
       
       // Enable web navigation for back button support
       sdk.back.enableWebNavigation();
+      
+      // Log SDK capabilities for debugging
+      console.log('Farcaster Frame SDK initialized');
+      console.log('Available SDK methods:', {
+        actions: Object.keys(sdk.actions || {}),
+        wallet: sdk.wallet ? 'available' : 'unavailable',
+      });
     };
     
     init();

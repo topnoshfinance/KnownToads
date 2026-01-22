@@ -38,7 +38,7 @@ export const metadata: Metadata = {
   other: {
     'fc:frame': 'vNext',
     'fc:frame:image': '/og-image.png',
-    'fc:frame:button:1': 'View Directory',
+    'fc:frame:button:1': '🐸 Join the Gang',
   },
 };
 

@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase';
 import { SocialLinks } from '@/components/profile/SocialLinks';
 import { Button } from '@/components/ui/Button';
 import { SwapButton } from '@/components/ui/SwapButton';
+import { ShareButton } from '@/components/ShareButton';
 import { Header } from '@/components/ui/Header';
 import { Loading } from '@/components/ui/Loading';
 import styles from './page.module.css';
@@ -130,6 +131,16 @@ export default function ToadCardPage() {
             <SwapButton
               tokenAddress={profile.creator_coin_address}
               chainId={profile.chain_id}
+              style={{ width: '100%' }}
+            />
+          </div>
+
+          {/* Share Button */}
+          <div className={styles.section}>
+            <ShareButton
+              url={`https://farcaster.xyz/miniapps/bjXOyJfzJCxU/knowntoads/toad/${profile.fid}`}
+              text="🐸 Share Profile"
+              variant="secondary"
               style={{ width: '100%' }}
             />
           </div>

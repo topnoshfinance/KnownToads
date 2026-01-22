@@ -9,6 +9,7 @@ import { Header } from '@/components/ui/Header';
 import { Loading } from '@/components/ui/Loading';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
+import { ShareButton } from '@/components/ShareButton';
 
 export default function HomePage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -86,9 +87,20 @@ export default function HomePage() {
           }}>
             The Toadgang Community Directory
           </p>
-          <Link href="/profile/edit">
-            <Button>Join the Gang</Button>
-          </Link>
+          <div style={{ 
+            display: 'flex', 
+            gap: 'var(--spacing-md)', 
+            justifyContent: 'center',
+            flexWrap: 'wrap',
+          }}>
+            <Link href="/profile/edit">
+              <Button>Join the Gang</Button>
+            </Link>
+            <ShareButton
+              url="https://farcaster.xyz/miniapps/bjXOyJfzJCxU/knowntoads"
+              text="🐸 Share KnownToads"
+            />
+          </div>
         </div>
 
         {/* Search and Filter */}
