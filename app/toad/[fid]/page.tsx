@@ -140,7 +140,7 @@ export default function ToadCardPage() {
             />
           </div>
 
-          {/* Contract Address - Minimal */}
+          {/* Contract Address Footer */}
           <div className={styles.contractAddressFooter}>
             <span className={styles.contractAddressLabel}>Contract:</span>
             <code className={styles.contractAddressCode}>

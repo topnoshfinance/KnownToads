@@ -191,12 +191,12 @@
   }
 
   .contractAddressFooter {
-    font-size: 10px;
+    font-size: var(--text-xs);
     padding: var(--spacing-xs);
   }
 
   .copyButtonSmall {
     padding: 2px var(--spacing-xs);
-    font-size: 10px;
+    font-size: var(--text-xs);
   }
 }

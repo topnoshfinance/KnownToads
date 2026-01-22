@@ -22,7 +22,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           ref={ref}
           className={`input-primary ${className}`}
           style={{
-            minHeight: '100px',
+            minHeight: '120px',
             resize: 'vertical',
             fontFamily: 'inherit',
             lineHeight: '1.5',
