@@ -28,9 +28,7 @@ export function ShareButton({
       // Fallback to native share API if available
       if (navigator.share) {
         try {
-          await navigator.share({
-            url: url,
-          });
+          await navigator.share({ url });
         } catch (shareError) {
           console.error('Error with native share:', shareError);
         }

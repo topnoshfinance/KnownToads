@@ -9,15 +9,26 @@ interface NotificationPromptProps {
   onPermissionChange?: (permission: NotificationPermission) => void;
 }
 
+const STORAGE_KEY = 'notification-prompt-shown';
+
+function setPromptShown() {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(STORAGE_KEY, 'true');
+  }
+}
+
+function hasPromptBeenShown(): boolean {
+  if (typeof window === 'undefined') return false;
+  return localStorage.getItem(STORAGE_KEY) === 'true';
+}
+
 export function NotificationPrompt({ onPermissionChange }: NotificationPromptProps) {
   const [permission, setPermission] = useState<NotificationPermission>('unavailable');
   const [showPrompt, setShowPrompt] = useState(false);
 
   useEffect(() => {
     // Check if we've already asked or if notifications are available
-    const hasAsked = localStorage.getItem('notification-prompt-shown');
-    
-    if (hasAsked === 'true') {
+    if (hasPromptBeenShown()) {
       setShowPrompt(false);
     }
 
@@ -55,8 +66,7 @@ export function NotificationPrompt({ onPermissionChange }: NotificationPromptPro
           onPermissionChange?.('denied');
         }
         
-        // Mark that we've shown the prompt
-        localStorage.setItem('notification-prompt-shown', 'true');
+        setPromptShown();
         setShowPrompt(false);
       }
     } catch (error) {
@@ -66,7 +76,7 @@ export function NotificationPrompt({ onPermissionChange }: NotificationPromptPro
   };
 
   const handleDismiss = () => {
-    localStorage.setItem('notification-prompt-shown', 'true');
+    setPromptShown();
     setShowPrompt(false);
   };
 

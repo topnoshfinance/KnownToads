@@ -20,6 +20,8 @@ import {
   validateZoraUrl,
 } from '@/lib/validation';
 
+const PROFILE_REDIRECT_DELAY_MS = 3000;
+
 export default function ProfileEditPage() {
   const router = useRouter();
   const { isConnected } = useAccount();
@@ -112,7 +114,7 @@ export default function ProfileEditPage() {
       // Show success temporarily, then redirect
       setTimeout(() => {
         router.push(`/toad/${farcasterContext.fid}`);
-      }, 3000);
+      }, PROFILE_REDIRECT_DELAY_MS);
     } catch (err) {
       console.error('Error saving profile:', err);
       setError(err instanceof Error ? err.message : 'Failed to save profile');
