@@ -22,7 +22,7 @@ Complete Farcaster mini app implementation for the toadgang community directory.
 
 ### Blockchain (Base)
 - **Contract Validation**: Verifies ERC-20 tokens on Base using viem
-- **Swap Integration**: Uniswap V3 transaction generation for token swaps
+- **Swap Integration**: 0x Protocol swap aggregator for token swaps
 - **Chain ID**: 8453 (Base)
 
 ## Key Features Implemented
@@ -54,7 +54,7 @@ Complete Farcaster mini app implementation for the toadgang community directory.
 - "Buy 1 USDC" swap button
 
 ### 5. Swap Integration
-- API endpoint generates Uniswap V3 transaction calldata
+- API endpoint generates 0x Protocol swap transaction calldata
 - Swaps 1 USDC for creator's ERC-20 token
 - Returns Farcaster Frame transaction format
 
@@ -93,6 +93,7 @@ Complete Farcaster mini app implementation for the toadgang community directory.
   cache.ts               # PFP caching logic
   wagmi.tsx              # Wagmi configuration
   useFarcasterContext.ts # Hook to access Frame context
+  0x-helpers.ts          # 0x Protocol API integration
 
 /types
   profile.ts             # TypeScript interfaces
@@ -114,6 +115,7 @@ TOADGOD_FID=                      # FID of @toadgod1017
 BASE_RPC_URL=                     # Base RPC URL (default: https://mainnet.base.org)
 NEXT_PUBLIC_BASE_CHAIN_ID=        # Chain ID (default: 8453)
 NEXT_PUBLIC_APP_URL=              # App URL for production
+ZEROX_API_KEY=                    # 0x API key (optional, for higher rate limits)
 ```
 
 ## Deployment Checklist

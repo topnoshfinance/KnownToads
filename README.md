@@ -63,6 +63,7 @@ A Farcaster mini app that serves as a community directory where toadgang members
    - `FARCASTER_API_KEY` - Your Farcaster API key (from Warpcast)
    - `TOADGOD_FID` - The FID of @toadgod1017
    - `BASE_RPC_URL` - Base RPC endpoint (default: https://mainnet.base.org)
+   - `ZEROX_API_KEY` - 0x API key (optional, for higher rate limits)
 
 5. **Add required images**
    
@@ -185,9 +186,9 @@ When users add a creator coin address, the app:
 
 The "Buy 1 USDC" button triggers a Farcaster Frame transaction:
 1. User clicks button on Toad Card
-2. API generates transaction calldata for Uniswap V3 swap
+2. API generates transaction calldata using 0x Protocol swap aggregator
 3. Farcaster wallet prompts user to approve
-4. Transaction executes on Base
+4. Transaction executes on Base with optimal DEX routing
 5. User receives creator coin tokens
 
 ## Deployment
