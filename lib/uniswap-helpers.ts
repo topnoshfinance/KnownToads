@@ -70,7 +70,7 @@ export async function findPoolAndGetQuote(
   tokenIn: Address,
   tokenOut: Address,
   amountIn: bigint,
-  publicClient: PublicClient
+  publicClient: any
 ): Promise<QuoteResult | null> {
   for (const fee of FEE_TIERS) {
     try {
