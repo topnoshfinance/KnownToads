@@ -10,6 +10,7 @@
   --black: #000000;
   --white: #FFFFFF;
   --mint: #B8F5E6;
+  --token-accent: #f59e0b; /* Gold/orange for token ticker symbols */
 
   /* Semantic Colors */
   --primary: var(--toby-blue);

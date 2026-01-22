@@ -155,8 +155,9 @@ export function SocialLinks({
           </div>
         )}
         {/* Other platforms as emojis only, side by side */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)', flexWrap: 'wrap' }}>
-          {otherLinks.map((link) => (
+        {(otherLinks.length > 0 || contractLink) && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)', flexWrap: 'wrap' }}>
+            {otherLinks.map((link) => (
             <a
               key={link.platform}
               href={link.url}
@@ -191,11 +192,12 @@ export function SocialLinks({
                 transition: 'background-color 0.2s',
               }}
             >
-              <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>${contractLink.handle}</span>
+              <span style={{ color: 'var(--token-accent)', fontWeight: 'bold' }}>${contractLink.handle}</span>
               <span style={{ fontSize: '12px' }}>{copied ? '✓' : '📋'}</span>
             </button>
           )}
         </div>
+        )}
       </div>
     );
   }
@@ -226,7 +228,7 @@ export function SocialLinks({
                 }}
               >
                 <span style={{ fontSize: '20px' }}>💎</span>
-                <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>${link.handle}</span>
+                <span style={{ color: 'var(--token-accent)', fontWeight: 'bold' }}>${link.handle}</span>
                 <span style={{ fontSize: '14px', marginLeft: '4px' }}>{copied ? '✓ Copied!' : '📋'}</span>
               </button>
               <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', fontFamily: 'monospace' }}>

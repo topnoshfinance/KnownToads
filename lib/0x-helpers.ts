@@ -50,7 +50,7 @@ export interface QuoteResult {
   price: string;
   estimatedGas: string;
   provider?: SwapProvider;
-  slippageUsed?: number;
+  slippageUsed?: number; // The slippage percentage that was successfully used for this quote
 }
 
 /**
