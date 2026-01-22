@@ -55,15 +55,18 @@ export function SocialLinks({
   // Fetch token symbol if contract address is provided
   useEffect(() => {
     if (contractAddress && !ticker) {
-      fetchTokenSymbol(contractAddress as `0x${string}`)
-        .then(symbol => {
-          if (symbol) {
-            setTokenTicker(symbol);
-          }
-        })
-        .catch(err => {
-          console.error('Error fetching token symbol:', err);
-        });
+      // Validate contract address format before fetching
+      if (contractAddress.startsWith('0x') && contractAddress.length === 42) {
+        fetchTokenSymbol(contractAddress as `0x${string}`)
+          .then(symbol => {
+            if (symbol) {
+              setTokenTicker(symbol);
+            }
+          })
+          .catch(err => {
+            console.error('Error fetching token symbol:', err);
+          });
+      }
     }
   }, [contractAddress, ticker]);
 
@@ -136,6 +139,7 @@ export function SocialLinks({
     const farcasterLink = links.find(l => l.platform === 'farcaster');
     const contractLink = links.find(l => l.platform === 'contract');
     const otherLinks = links.filter(l => l.platform !== 'farcaster' && l.platform !== 'contract');
+    const hasOtherLinksOrContract = otherLinks.length > 0 || contractLink;
     
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xs)' }}>
@@ -155,7 +159,7 @@ export function SocialLinks({
           </div>
         )}
         {/* Other platforms as emojis only, side by side */}
-        {(otherLinks.length > 0 || contractLink) && (
+        {hasOtherLinksOrContract && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)', flexWrap: 'wrap' }}>
             {otherLinks.map((link) => (
             <a
