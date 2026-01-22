@@ -1,9 +1,20 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, usePublicClient } from 'wagmi';
 import { parseUnits, formatUnits, Address, encodeFunctionData } from 'viem';
 import { base } from 'wagmi/chains';
+import {
+  QUOTER_V2_ADDRESS,
+  QUOTER_V2_ABI,
+  SWAP_ROUTER_ADDRESS,
+  USDC_ADDRESS,
+  FEE_TIER_NAMES,
+  findPoolAndGetQuote,
+  calculateMinimumOutput,
+  formatExchangeRate,
+  QuoteResult,
+} from '@/lib/uniswap-helpers';
 
 // ERC-20 ABI for approve function
 const ERC20_ABI = [
@@ -62,11 +73,6 @@ const SWAP_ROUTER_ABI = [
   },
 ] as const;
 
-// Uniswap V3 Router address on Base
-const SWAP_ROUTER_ADDRESS = '0x2626664c2603336E57B271c5C0b26F421741e481' as Address;
-// USDC on Base
-const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as Address;
-
 interface SwapModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -90,8 +96,11 @@ export function SwapModal({
   const [step, setStep] = useState<SwapStep>('input');
   const [error, setError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<string | null>(null);
+  const [quote, setQuote] = useState<QuoteResult | null>(null);
+  const [isLoadingQuote, setIsLoadingQuote] = useState<boolean>(false);
 
   const { address: userAddress, isConnected, chain } = useAccount();
+  const publicClient = usePublicClient({ chainId: base.id });
   
   // Get USDC balance
   const { data: usdcBalanceData } = useReadContract({
@@ -140,6 +149,40 @@ export function SwapModal({
   });
 
   // Define executeSwap and executeApprove before the useEffects that use them
+  const fetchQuote = useCallback(async () => {
+    if (!publicClient || !amount || parseFloat(amount) <= 0) {
+      setQuote(null);
+      return;
+    }
+
+    try {
+      setIsLoadingQuote(true);
+      setError(null);
+
+      const amountIn = parseUnits(amount, 6); // USDC has 6 decimals
+      
+      const quoteResult = await findPoolAndGetQuote(
+        USDC_ADDRESS,
+        tokenAddress as Address,
+        amountIn,
+        publicClient
+      );
+
+      if (!quoteResult) {
+        setError('No liquidity pool found for this token. This token may not be tradeable on Uniswap V3.');
+        setQuote(null);
+      } else {
+        setQuote(quoteResult);
+      }
+    } catch (err) {
+      console.error('Quote error:', err);
+      setError('Failed to fetch price quote. Please try again.');
+      setQuote(null);
+    } finally {
+      setIsLoadingQuote(false);
+    }
+  }, [publicClient, amount, tokenAddress]);
+
   const executeApprove = useCallback(async () => {
     try {
       setError(null);
@@ -164,6 +207,7 @@ export function SwapModal({
   const executeSwap = useCallback(async () => {
     try {
       if (!userAddress) throw new Error('No wallet connected');
+      if (!quote) throw new Error('No price quote available');
       
       setError(null);
       setStep('swapping');
@@ -171,10 +215,8 @@ export function SwapModal({
       const amountIn = parseUnits(amount, 6); // USDC has 6 decimals
       const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200); // 20 minutes
 
-      // Calculate minimum output with 0.5% slippage tolerance
-      // Note: In production, this should fetch actual price and calculate proper slippage
-      const slippageTolerance = 50n; // 0.5% in basis points (50/10000)
-      const amountOutMinimum = 0n; // Simplified - in production, calculate based on price quote
+      // Calculate minimum output with 3% slippage tolerance
+      const amountOutMinimum = calculateMinimumOutput(quote.amountOut);
 
       swap({
         address: SWAP_ROUTER_ADDRESS,
@@ -184,7 +226,7 @@ export function SwapModal({
           {
             tokenIn: USDC_ADDRESS,
             tokenOut: tokenAddress as Address,
-            fee: 3000, // 0.3% fee tier
+            fee: quote.fee, // Use the fee tier that has liquidity
             recipient: userAddress,
             deadline,
             amountIn,
@@ -199,7 +241,7 @@ export function SwapModal({
       setError(err instanceof Error ? err.message : 'Failed to execute swap');
       setStep('error');
     }
-  }, [userAddress, amount, tokenAddress, swap]);
+  }, [userAddress, amount, tokenAddress, quote, swap]);
 
   // Handle approve success
   useEffect(() => {
@@ -219,6 +261,21 @@ export function SwapModal({
       setStep('success');
     }
   }, [isSwapSuccess, swapData]);
+
+  // Fetch quote when amount changes
+  useEffect(() => {
+    // Early return if conditions not met
+    if (!isConnected || chain?.id !== base.id || !amount || parseFloat(amount) <= 0) {
+      setQuote(null);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      fetchQuote();
+    }, 500); // Debounce for 500ms
+
+    return () => clearTimeout(timer);
+  }, [amount, isConnected, chain?.id, fetchQuote]);
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -244,6 +301,11 @@ export function SwapModal({
       return;
     }
 
+    if (!quote) {
+      setError('No price quote available. The pool may not exist or has insufficient liquidity.');
+      return;
+    }
+
     const amountInWei = parseUnits(amount, 6);
     
     // Check balance
@@ -265,6 +327,8 @@ export function SwapModal({
     setError(null);
     setTxHash(null);
     setAmount(defaultAmount.toString());
+    setQuote(null);
+    setIsLoadingQuote(false);
     onClose();
   };
 
@@ -469,7 +533,7 @@ export function SwapModal({
               )}
             </div>
 
-            {/* Token Info */}
+            {/* Token Info and Quote */}
             <div style={{
               background: 'var(--ice-blue)',
               padding: 'var(--spacing-md)',
@@ -483,28 +547,65 @@ export function SwapModal({
               }}>
                 You will receive
               </div>
-              <div style={{ 
-                fontSize: 'var(--text-lg)',
-                fontWeight: 'var(--font-semibold)',
-                color: 'var(--deep-blue)',
-              }}>
-                {tokenSymbol}
-              </div>
+              
+              {isLoadingQuote && (
+                <div style={{ 
+                  fontSize: 'var(--text-md)',
+                  color: 'var(--deep-blue)',
+                  fontStyle: 'italic',
+                }}>
+                  ⏳ Fetching price...
+                </div>
+              )}
+              
+              {!isLoadingQuote && quote && (
+                <>
+                  <div style={{ 
+                    fontSize: 'var(--text-lg)',
+                    fontWeight: 'var(--font-semibold)',
+                    color: 'var(--deep-blue)',
+                  }}>
+                    ≈ {formatUnits(quote.amountOut, 18)} {tokenSymbol}
+                  </div>
+                  <div style={{ 
+                    fontSize: 'var(--text-xs)',
+                    color: 'var(--text-secondary)',
+                    marginTop: 'var(--spacing-xs)',
+                  }}>
+                    {formatExchangeRate(
+                      parseUnits(amount || '0', 6),
+                      quote.amountOut,
+                      'USDC',
+                      tokenSymbol
+                    )}
+                  </div>
+                  <div style={{ 
+                    fontSize: 'var(--text-xs)',
+                    color: 'var(--text-secondary)',
+                    marginTop: 'var(--spacing-xs)',
+                  }}>
+                    Fee tier: {FEE_TIER_NAMES[quote.fee]} • Slippage: 3%
+                  </div>
+                </>
+              )}
+              
+              {!isLoadingQuote && !quote && (
+                <div style={{ 
+                  fontSize: 'var(--text-md)',
+                  fontWeight: 'var(--font-semibold)',
+                  color: 'var(--deep-blue)',
+                }}>
+                  {tokenSymbol}
+                </div>
+              )}
+              
               <div style={{ 
                 fontSize: 'var(--text-xs)',
                 color: 'var(--text-secondary)',
-                marginTop: 'var(--spacing-xs)',
+                marginTop: 'var(--spacing-sm)',
                 wordBreak: 'break-all',
               }}>
                 {tokenAddress}
-              </div>
-              <div style={{ 
-                fontSize: 'var(--text-xs)',
-                color: '#d97706',
-                marginTop: 'var(--spacing-sm)',
-                fontStyle: 'italic',
-              }}>
-                ⚠️ Note: Slippage protection is minimal. Review transaction carefully.
               </div>
             </div>
 
@@ -568,9 +669,9 @@ export function SwapModal({
                 onClick={handleSwap}
                 className="btn-primary"
                 style={{ flex: 1 }}
-                disabled={isProcessing || !isConnected}
+                disabled={isProcessing || !isConnected || isLoadingQuote || !quote}
               >
-                {isProcessing ? 'Processing...' : 'Swap'}
+                {isProcessing ? 'Processing...' : isLoadingQuote ? 'Loading...' : 'Swap'}
               </button>
             </div>
 
