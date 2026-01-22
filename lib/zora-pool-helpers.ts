@@ -3,6 +3,15 @@ import { Address } from 'viem';
 // Base chain ID
 const BASE_CHAIN_ID = 8453;
 
+// Zora API endpoints (configurable via environment or defaults)
+// Note: These endpoints are inferred from Zora's API patterns
+// If incorrect, set ZORA_POOL_API_BASE_URL and ZORA_SWAP_API_BASE_URL environment variables
+const ZORA_POOL_API_BASE_URL = process.env.ZORA_POOL_API_BASE_URL || 'https://api.zora.co/pools';
+const ZORA_SWAP_API_BASE_URL = process.env.ZORA_SWAP_API_BASE_URL || 'https://api-sdk.zora.engineering';
+
+// USDC on Base (used for pool inference)
+const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as Address;
+
 // Cache TTL: 24 hours
 const POOL_METADATA_CACHE_TTL = 24 * 60 * 60 * 1000;
 
@@ -106,14 +115,10 @@ export async function getZoraPoolMetadata(
   
   try {
     // Attempt 1: Try Zora SDK API endpoint
-    // Note: This is a placeholder endpoint - actual Zora API endpoint may differ
-    // Research shows Zora may provide pool info through their protocol SDK
     const apiKey = process.env.ZORA_API_KEY;
     
-    // Try Zora API endpoint for pool information
-    // Format may be: https://api.zora.co/pools/{chainId}/{tokenAddress}
-    // or via their SDK: @zoralabs/protocol-sdk
-    const zoraApiUrl = `https://api.zora.co/pools/${BASE_CHAIN_ID}/${creatorCoinAddress}`;
+    // Construct Zora API URL for pool information
+    const zoraApiUrl = `${ZORA_POOL_API_BASE_URL}/${BASE_CHAIN_ID}/${creatorCoinAddress}`;
     
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
@@ -170,8 +175,7 @@ export async function getZoraPoolMetadata(
     
     // Try to get a minimal quote to see if pool exists
     // This is a heuristic approach - if Zora can quote it, a V4 pool likely exists
-    const zoraSwapUrl = 'https://api-sdk.zora.engineering/quote';
-    const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as Address;
+    const zoraSwapUrl = `${ZORA_SWAP_API_BASE_URL}/quote`;
     
     try {
       const quoteResponse = await fetch(zoraSwapUrl, {
