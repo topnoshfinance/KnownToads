@@ -132,8 +132,10 @@ export function SwapModal({
 
   // Helper function to get provider display name
   const getProviderDisplay = (): string => {
-    if (!quote?.provider) return 'Zora & 0x Protocol';
-    return quote.provider === 'zora' ? 'Zora (Fallback)' : '0x Protocol';
+    if (!quote?.provider) return 'Zora, 0x & Uniswap V4';
+    if (quote.provider === 'zora') return 'Zora (Fallback)';
+    if (quote.provider === 'uniswap-v4') return 'Uniswap V4 (Direct)';
+    return '0x Protocol';
   };
 
   // Helper function to get slippage display
@@ -372,7 +374,7 @@ export function SwapModal({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 9999,
+        zIndex: 99999, // Increased z-index to ensure modal appears on top of all profile cards
         padding: 'var(--spacing-md)',
       }}
       onClick={handleClose}

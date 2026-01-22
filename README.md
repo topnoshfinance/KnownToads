@@ -65,6 +65,7 @@ A Farcaster mini app that serves as a community directory where toadgang members
    - `BASE_RPC_URL` - Base RPC endpoint (default: https://mainnet.base.org)
    - `ZEROX_API_KEY` - 0x API key (optional, for higher rate limits)
    - `ZORA_API_KEY` - Zora API key for creator coin swaps (get from https://zora.co/developers)
+   - `NEXT_PUBLIC_UNISWAP_V4_POOL_MANAGER` - (Optional) Uniswap V4 PoolManager address on Base for direct V4 swaps
 
 5. **Add required images**
    
@@ -115,6 +116,12 @@ To test your app as a Farcaster mini app:
   supabase.ts         # Supabase client
   validation.ts       # Contract & link validation
   cache.ts            # PFP caching logic
+  0x-helpers.ts       # 0x Protocol API integration with multi-layer routing
+  zora-swap-helpers.ts # Zora API integration
+  zora-pool-helpers.ts # Zora pool metadata discovery and caching
+  uniswap-v4-helpers.ts # Direct Uniswap V4 PoolManager integration
+  token-helpers.ts    # Token information fetching
+  swap-constants.ts   # Swap-related constants
 /types
   profile.ts          # TypeScript types
 ```
@@ -185,18 +192,44 @@ When users add a creator coin address, the app:
 
 ### Farcaster Native Swap
 
-The swap functionality provides seamless token swaps with smart routing:
+The swap functionality provides seamless token swaps with **multi-layer smart routing**:
+
 1. User enters amount and clicks swap button
 2. App fetches real token symbol and decimals from the contract
-3. Smart routing tries Zora API first (for Uniswap V4 pools), then falls back to 0x Protocol
+3. **Multi-layer routing attempts execution** (see below)
 4. Swap quote displays which provider is being used
 5. User approves USDC (if needed) and executes swap
 6. Transaction executes on Base with optimal routing
 7. User receives creator coin tokens
 
-**Provider Priority:**
-- **Primary**: Zora API - Best for Zora creator coins with Uniswap V4 liquidity
-- **Fallback**: 0x Protocol - Aggregates liquidity from other DEXs on Base
+#### Multi-Layer Routing Architecture
+
+The swap system uses an intelligent 4-layer routing strategy to maximize success rates:
+
+**Layer 1: Pool Discovery**
+- Queries Zora SDK/API for Uniswap V4 pool metadata
+- Extracts pool key, liquidity depth, and custom hook information
+- Caches pool metadata for 24 hours to reduce API calls
+
+**Layer 2: Enhanced Routing (if pool metadata found)**
+- **2a. 0x Protocol with Pool Hints** - Tries 0x API with pool-specific routing hints (3-20% progressive slippage)
+- **2b. Direct Uniswap V4** - If 0x fails, constructs direct V4 PoolManager swap transaction (10-15% slippage)
+- **2c. Zora API Fallback** - Last resort with 20% slippage
+
+**Layer 3: Standard Routing (no pool metadata)**
+- **3a. 0x Protocol** - Standard 0x aggregation without hints
+- **3b. Zora API Fallback** - Final fallback
+
+**Provider Details:**
+- **0x Protocol** - Primary aggregator, best for standard DEX liquidity
+- **Uniswap V4 (Direct)** - Direct PoolManager calls for Zora creator coins with custom hooks
+- **Zora API** - Ultimate fallback, specialized for Zora creator coins
+
+**Benefits:**
+- Higher success rate for Zora creator coins with custom V4 pools
+- Lower average slippage when pool metadata is available
+- Graceful degradation if primary providers fail
+- Detailed console logging for routing decisions
 
 ## Deployment
 

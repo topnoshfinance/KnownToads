@@ -53,10 +53,42 @@ Complete Farcaster mini app implementation for the toadgang community directory.
 - Creator coin address (copyable)
 - "Buy 1 USDC" swap button
 
-### 5. Swap Integration
-- API endpoint generates 0x Protocol swap transaction calldata
-- Swaps 1 USDC for creator's ERC-20 token
-- Returns Farcaster Frame transaction format
+### 5. Swap Integration - Multi-Layer Routing
+
+The swap system implements an intelligent 4-layer routing strategy to maximize success rates for Zora creator coins:
+
+#### Layer 1: Pool Discovery
+- Queries Zora SDK/API for Uniswap V4 pool metadata
+- Extracts pool key components (currency0, currency1, fee, tickSpacing, hooks)
+- Identifies custom hook contracts and liquidity depth
+- Caches pool metadata for 24 hours to minimize API calls
+- Falls back to inference if direct API unavailable
+
+#### Layer 2: Enhanced Routing (when pool metadata found)
+- **2a. 0x Protocol with Pool Hints**
+  - Passes pool metadata as routing hints to 0x API
+  - Progressive slippage: 3% → 5% → 10% → 15% → 20%
+  - Best for standard liquidity with pool awareness
+- **2b. Direct Uniswap V4 PoolManager**
+  - Constructs direct swap through V4 PoolManager contract
+  - Uses pool keys from discovery to build transaction calldata
+  - Handles custom hook data and parameters
+  - Uses 10-15% slippage for shallow liquidity pools
+- **2c. Zora API Fallback**
+  - Ultimate fallback with 20% slippage
+  - Specialized for Zora creator coin swaps
+
+#### Layer 3: Standard Routing (no pool metadata)
+- **3a. 0x Protocol without hints** - Standard aggregation
+- **3b. Zora API Fallback** - Final attempt
+
+#### Implementation Files
+- `lib/zora-pool-helpers.ts` - Pool metadata discovery and caching
+- `lib/uniswap-v4-helpers.ts` - Direct V4 PoolManager integration
+- `lib/0x-helpers.ts` - Enhanced routing logic with pool hints
+- `lib/zora-swap-helpers.ts` - Zora API integration
+- `components/ui/SwapModal.tsx` - UI with provider display
+- API endpoint generates transaction calldata with smart routing
 
 ## Files Structure
 
@@ -93,7 +125,12 @@ Complete Farcaster mini app implementation for the toadgang community directory.
   cache.ts               # PFP caching logic
   wagmi.tsx              # Wagmi configuration
   useFarcasterContext.ts # Hook to access Frame context
-  0x-helpers.ts          # 0x Protocol API integration
+  0x-helpers.ts          # 0x Protocol API integration with multi-layer routing
+  zora-swap-helpers.ts   # Zora API integration
+  zora-pool-helpers.ts   # Zora pool metadata discovery and caching
+  uniswap-v4-helpers.ts  # Direct Uniswap V4 PoolManager integration
+  token-helpers.ts       # Token information fetching
+  swap-constants.ts      # Swap-related constants
 
 /types
   profile.ts             # TypeScript interfaces
@@ -116,6 +153,9 @@ BASE_RPC_URL=                     # Base RPC URL (default: https://mainnet.base.
 NEXT_PUBLIC_BASE_CHAIN_ID=        # Chain ID (default: 8453)
 NEXT_PUBLIC_APP_URL=              # App URL for production
 ZEROX_API_KEY=                    # 0x API key (optional, for higher rate limits)
+ZORA_API_KEY=                     # Zora API key for pool discovery and swaps
+NEXT_PUBLIC_UNISWAP_V4_POOL_MANAGER= # Uniswap V4 PoolManager on Base (optional, for direct V4 swaps)
+NEXT_PUBLIC_UNISWAP_V4_QUOTER=    # Uniswap V4 Quoter (optional, not yet implemented)
 ```
 
 ## Deployment Checklist
