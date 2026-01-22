@@ -104,6 +104,18 @@ export default function ToadCardPage() {
             <p style={{ color: 'var(--text-secondary)' }}>FID: {profile.fid}</p>
           </div>
 
+          {/* Bio Section */}
+          {profile.bio && (
+            <div className={styles.section}>
+              <h2 className={styles.sectionHeading}>
+                About
+              </h2>
+              <p className={styles.bioText}>
+                {profile.bio}
+              </p>
+            </div>
+          )}
+
           {/* Social Links */}
           <div className={styles.section}>
             <h2 className={styles.sectionHeading}>
@@ -119,34 +131,29 @@ export default function ToadCardPage() {
             />
           </div>
 
-          {/* Creator Coin */}
+          {/* Swap Button */}
           <div className={styles.section}>
-            <h2 className={styles.sectionHeading}>
-              Creator Coin
-            </h2>
-            <div className={`info-card ${styles.contractInfo}`}>
-              <p className={styles.contractLabel}>
-                Contract Address
-              </p>
-              <div className={styles.contractAddressContainer}>
-                <code className={styles.contractCode}>
-                  {profile.creator_coin_address}
-                </code>
-                <Button onClick={handleCopyAddress} className={styles.copyButton}>
-                  {copied ? '✓' : 'Copy'}
-                </Button>
-              </div>
-              {profile.chain_id !== 8453 && (
-                <p style={{ fontSize: 'var(--text-sm)', color: '#eab308', marginTop: 'var(--spacing-sm)' }}>
-                  ⚠️ Chain ID: {profile.chain_id} (not Base)
-                </p>
-              )}
-            </div>
             <SwapButton
               tokenAddress={profile.creator_coin_address}
               chainId={profile.chain_id}
               style={{ width: '100%' }}
             />
+          </div>
+
+          {/* Contract Address Footer */}
+          <div className={styles.contractAddressFooter}>
+            <span className={styles.contractAddressLabel}>Contract:</span>
+            <code className={styles.contractAddressCode}>
+              {profile.creator_coin_address}
+            </code>
+            <button onClick={handleCopyAddress} className={styles.copyButtonSmall}>
+              {copied ? '✓' : 'Copy'}
+            </button>
+            {profile.chain_id !== 8453 && (
+              <span className={styles.chainWarning}>
+                ⚠️ Chain ID: {profile.chain_id}
+              </span>
+            )}
           </div>
 
           {/* Metadata */}
