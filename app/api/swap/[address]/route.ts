@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { encodeFunctionData, parseUnits, Address } from 'viem';
+import { encodeFunctionData, parseUnits, Address, createPublicClient, http } from 'viem';
+import { base } from 'viem/chains';
+import {
+  QUOTER_V2_ADDRESS,
+  QUOTER_V2_ABI,
+  SWAP_ROUTER_ADDRESS,
+  USDC_ADDRESS,
+  findPoolAndGetQuote,
+  calculateMinimumOutput,
+} from '@/lib/uniswap-helpers';
 
 // Uniswap V3 SwapRouter ABI (simplified for exactInputSingle)
 const SWAP_ROUTER_ABI = [
@@ -27,11 +36,6 @@ const SWAP_ROUTER_ABI = [
   },
 ] as const;
 
-// Base Uniswap V3 SwapRouter address
-const SWAP_ROUTER_ADDRESS = '0x2626664c2603336E57B271c5C0b26F421741e481' as Address;
-// USDC on Base
-const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as Address;
-
 export async function POST(
   request: NextRequest,
   { params }: { params: { address: string } }
@@ -48,8 +52,34 @@ export async function POST(
       );
     }
 
+    // Create a public client to fetch quote
+    const publicClient = createPublicClient({
+      chain: base,
+      transport: http(process.env.BASE_RPC_URL || 'https://mainnet.base.org'),
+    });
+
     // Amount: 1 USDC (6 decimals)
     const amountIn = parseUnits('1', 6);
+
+    // Get quote to find available pool and expected output
+    const quote = await findPoolAndGetQuote(
+      USDC_ADDRESS,
+      address as Address,
+      amountIn,
+      publicClient
+    );
+
+    if (!quote) {
+      return NextResponse.json(
+        { 
+          error: 'No liquidity pool found for this token pair. This token may not be tradeable on Uniswap V3.',
+        },
+        { status: 400 }
+      );
+    }
+
+    // Calculate minimum output with 3% slippage tolerance
+    const amountOutMinimum = calculateMinimumOutput(quote.amountOut);
 
     // Deadline: 20 minutes from now
     const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200);
@@ -62,11 +92,11 @@ export async function POST(
         {
           tokenIn: USDC_ADDRESS,
           tokenOut: address as Address,
-          fee: 3000, // 0.3% fee tier
+          fee: quote.fee, // Use the fee tier that has liquidity
           recipient: userAddress as Address,
           deadline,
           amountIn,
-          amountOutMinimum: 0n, // Accept any amount (in production, calculate slippage)
+          amountOutMinimum,
           sqrtPriceLimitX96: 0n,
         },
       ],
@@ -85,8 +115,19 @@ export async function POST(
     });
   } catch (error) {
     console.error('Error creating swap transaction:', error);
+    
+    // Provide more specific error messages
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create swap transaction';
+    
+    if (errorMessage.includes('pool') || errorMessage.includes('liquidity')) {
+      return NextResponse.json(
+        { error: 'Insufficient liquidity for this token pair' },
+        { status: 400 }
+      );
+    }
+    
     return NextResponse.json(
-      { error: 'Failed to create swap transaction' },
+      { error: 'Failed to create swap transaction. Please try again.' },
       { status: 500 }
     );
   }
