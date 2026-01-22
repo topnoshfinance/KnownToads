@@ -1,20 +1,17 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, usePublicClient } from 'wagmi';
-import { parseUnits, formatUnits, Address, encodeFunctionData } from 'viem';
+import { useAccount, useSendTransaction, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
+import { parseUnits, formatUnits, Address } from 'viem';
 import { base } from 'wagmi/chains';
 import {
-  QUOTER_V2_ADDRESS,
-  QUOTER_V2_ABI,
-  SWAP_ROUTER_ADDRESS,
+  ZEROX_EXCHANGE_PROXY,
   USDC_ADDRESS,
-  FEE_TIER_NAMES,
-  findPoolAndGetQuote,
-  calculateMinimumOutput,
+  get0xQuote,
+  get0xSwapTransaction,
   formatExchangeRate,
   QuoteResult,
-} from '@/lib/uniswap-helpers';
+} from '@/lib/0x-helpers';
 
 // ERC-20 ABI for approve function
 const ERC20_ABI = [
@@ -47,32 +44,6 @@ const ERC20_ABI = [
   },
 ] as const;
 
-// Uniswap V3 SwapRouter ABI
-const SWAP_ROUTER_ABI = [
-  {
-    name: 'exactInputSingle',
-    type: 'function',
-    stateMutability: 'payable',
-    inputs: [
-      {
-        name: 'params',
-        type: 'tuple',
-        components: [
-          { name: 'tokenIn', type: 'address' },
-          { name: 'tokenOut', type: 'address' },
-          { name: 'fee', type: 'uint24' },
-          { name: 'recipient', type: 'address' },
-          { name: 'deadline', type: 'uint256' },
-          { name: 'amountIn', type: 'uint256' },
-          { name: 'amountOutMinimum', type: 'uint256' },
-          { name: 'sqrtPriceLimitX96', type: 'uint160' },
-        ],
-      },
-    ],
-    outputs: [{ name: 'amountOut', type: 'uint256' }],
-  },
-] as const;
-
 interface SwapModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -98,9 +69,9 @@ export function SwapModal({
   const [txHash, setTxHash] = useState<string | null>(null);
   const [quote, setQuote] = useState<QuoteResult | null>(null);
   const [isLoadingQuote, setIsLoadingQuote] = useState<boolean>(false);
+  const [swapTxData, setSwapTxData] = useState<{ to: string; data: string; value: string } | null>(null);
 
   const { address: userAddress, isConnected, chain } = useAccount();
-  const publicClient = usePublicClient({ chainId: base.id });
   
   // Get USDC balance
   const { data: usdcBalanceData } = useReadContract({
@@ -118,7 +89,7 @@ export function SwapModal({
     address: USDC_ADDRESS,
     abi: ERC20_ABI,
     functionName: 'allowance',
-    args: userAddress ? [userAddress, SWAP_ROUTER_ADDRESS] : undefined,
+    args: userAddress ? [userAddress, ZEROX_EXCHANGE_PROXY] : undefined,
     chainId: base.id,
   });
 
@@ -137,10 +108,10 @@ export function SwapModal({
 
   // Swap hook
   const {
-    writeContract: swap,
+    sendTransaction: sendSwapTx,
     data: swapData,
     isPending: isSwapPending,
-  } = useWriteContract();
+  } = useSendTransaction();
 
   // Wait for swap tx
   const { isSuccess: isSwapSuccess } = useWaitForTransactionReceipt({
@@ -150,8 +121,9 @@ export function SwapModal({
 
   // Define executeSwap and executeApprove before the useEffects that use them
   const fetchQuote = useCallback(async () => {
-    if (!publicClient || !amount || parseFloat(amount) <= 0) {
+    if (!userAddress || !amount || parseFloat(amount) <= 0) {
       setQuote(null);
+      setSwapTxData(null);
       return;
     }
 
@@ -161,27 +133,31 @@ export function SwapModal({
 
       const amountIn = parseUnits(amount, 6); // USDC has 6 decimals
       
-      const quoteResult = await findPoolAndGetQuote(
+      const quoteResult = await get0xQuote(
         USDC_ADDRESS,
         tokenAddress as Address,
         amountIn,
-        publicClient
+        userAddress
       );
 
       if (!quoteResult) {
-        setError('No liquidity pool found for this token. This token may not be tradeable on Uniswap V3.');
+        setError('No liquidity available for this token. The token may not be tradeable or may exist only on unsupported DEXs.');
         setQuote(null);
+        setSwapTxData(null);
       } else {
         setQuote(quoteResult);
+        // Note: We'll fetch the full transaction data when executing the swap
+        setSwapTxData(null);
       }
     } catch (err) {
       console.error('Quote error:', err);
       setError('Failed to fetch price quote. Please try again.');
       setQuote(null);
+      setSwapTxData(null);
     } finally {
       setIsLoadingQuote(false);
     }
-  }, [publicClient, amount, tokenAddress]);
+  }, [userAddress, amount, tokenAddress]);
 
   const executeApprove = useCallback(async () => {
     try {
@@ -194,7 +170,7 @@ export function SwapModal({
         address: USDC_ADDRESS,
         abi: ERC20_ABI,
         functionName: 'approve',
-        args: [SWAP_ROUTER_ADDRESS, amountInWei],
+        args: [ZEROX_EXCHANGE_PROXY, amountInWei],
         chainId: base.id,
       });
     } catch (err) {
@@ -213,27 +189,24 @@ export function SwapModal({
       setStep('swapping');
       
       const amountIn = parseUnits(amount, 6); // USDC has 6 decimals
-      const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200); // 20 minutes
 
-      // Calculate minimum output with 3% slippage tolerance
-      const amountOutMinimum = calculateMinimumOutput(quote.amountOut);
+      // Get swap transaction from 0x API
+      const swapTx = await get0xSwapTransaction(
+        USDC_ADDRESS,
+        tokenAddress as Address,
+        amountIn,
+        userAddress
+      );
 
-      swap({
-        address: SWAP_ROUTER_ADDRESS,
-        abi: SWAP_ROUTER_ABI,
-        functionName: 'exactInputSingle',
-        args: [
-          {
-            tokenIn: USDC_ADDRESS,
-            tokenOut: tokenAddress as Address,
-            fee: quote.fee, // Use the fee tier that has liquidity
-            recipient: userAddress,
-            deadline,
-            amountIn,
-            amountOutMinimum,
-            sqrtPriceLimitX96: 0n,
-          },
-        ],
+      if (!swapTx) {
+        throw new Error('Failed to get swap transaction from 0x API');
+      }
+
+      // Send the transaction using the data from 0x
+      sendSwapTx({
+        to: swapTx.to as Address,
+        data: swapTx.data as `0x${string}`,
+        value: BigInt(swapTx.value),
         chainId: base.id,
       });
     } catch (err) {
@@ -241,7 +214,7 @@ export function SwapModal({
       setError(err instanceof Error ? err.message : 'Failed to execute swap');
       setStep('error');
     }
-  }, [userAddress, amount, tokenAddress, quote, swap]);
+  }, [userAddress, amount, tokenAddress, quote, sendSwapTx]);
 
   // Handle approve success
   useEffect(() => {
@@ -584,7 +557,7 @@ export function SwapModal({
                     color: 'var(--text-secondary)',
                     marginTop: 'var(--spacing-xs)',
                   }}>
-                    Fee tier: {FEE_TIER_NAMES[quote.fee]} • Slippage: 3%
+                    Slippage: 3%
                   </div>
                 </>
               )}
@@ -682,7 +655,7 @@ export function SwapModal({
               color: 'var(--text-secondary)',
               textAlign: 'center',
             }}>
-              Swaps are executed via Uniswap V3 on Base
+              Swaps powered by 0x Protocol
             </div>
           </>
         )}
