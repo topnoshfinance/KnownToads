@@ -1,3 +1,12 @@
+/**
+ * @deprecated This file contains legacy multi-layer swap routing logic.
+ * The application now uses Uniswap Universal Router exclusively.
+ * Only constants (USDC_ADDRESS, BASE_CHAIN_ID, etc.) should be used from this file.
+ * All swap functions are deprecated and should not be used in new code.
+ * 
+ * See: lib/universal-router-helpers.ts for the new implementation.
+ */
+
 import { Address } from 'viem';
 import { getZoraQuote, getZoraSwapTransaction, type ZoraSwapQuote } from './zora-swap-helpers';
 import { getZoraPoolMetadata, type ZoraPoolMetadata } from './zora-pool-helpers';

@@ -1,7 +1,7 @@
 import { Address, createPublicClient, http } from 'viem';
 import { base } from 'viem/chains';
 
-// ERC-20 ABI for symbol and decimals functions
+// ERC-20 ABI for symbol, decimals, and name functions
 const ERC20_ABI = [
   {
     name: 'symbol',
@@ -17,7 +17,24 @@ const ERC20_ABI = [
     inputs: [],
     outputs: [{ name: '', type: 'uint8' }],
   },
+  {
+    name: 'name',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'string' }],
+  },
 ] as const;
+
+// In-memory cache for token metadata (24hr TTL)
+const tokenMetadataCache = new Map<string, {
+  name: string;
+  symbol: string;
+  decimals: number;
+  cachedAt: number;
+}>();
+
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 /**
  * Get the public client for Base chain
@@ -87,4 +104,112 @@ export async function fetchTokenInfo(tokenAddress: Address): Promise<{
     symbol: symbol || 'TOKEN',
     decimals,
   };
+}
+
+/**
+ * Fetch token name from contract
+ * @param tokenAddress - ERC-20 token contract address
+ * @returns Token name or null if not available
+ */
+export async function fetchTokenName(tokenAddress: Address): Promise<string | null> {
+  try {
+    const client = getBasePublicClient();
+    const name = await client.readContract({
+      address: tokenAddress,
+      abi: ERC20_ABI,
+      functionName: 'name',
+    });
+    return name as string;
+  } catch (error) {
+    console.error('Error fetching token name:', error);
+    return null;
+  }
+}
+
+/**
+ * Get token name with caching and Zora API fallback
+ * Tries multiple sources:
+ * 1. In-memory cache (24hr TTL)
+ * 2. Token contract (name() function)
+ * 3. Zora API
+ * 4. Token contract symbol as fallback
+ * 
+ * @param tokenAddress - ERC-20 token contract address
+ * @returns Token name or 'Token' as ultimate fallback
+ */
+export async function getTokenName(tokenAddress: Address): Promise<string> {
+  const cacheKey = tokenAddress.toLowerCase();
+  const cached = tokenMetadataCache.get(cacheKey);
+  
+  // Return cached if fresh
+  if (cached && Date.now() - cached.cachedAt < CACHE_TTL_MS) {
+    return cached.name || 'Token';
+  }
+
+  try {
+    // Try to get name from token contract first
+    const contractName = await fetchTokenName(tokenAddress);
+    if (contractName && contractName.trim() !== '') {
+      // Cache the result
+      const symbol = await fetchTokenSymbol(tokenAddress);
+      const decimals = await fetchTokenDecimals(tokenAddress);
+      
+      tokenMetadataCache.set(cacheKey, {
+        name: contractName,
+        symbol: symbol || '',
+        decimals,
+        cachedAt: Date.now(),
+      });
+      
+      return contractName;
+    }
+
+    // Fallback to Zora API for additional metadata
+    const zoraApiKey = process.env.ZORA_API_KEY;
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (zoraApiKey) {
+      headers['api-key'] = zoraApiKey;
+    }
+
+    const response = await fetch(
+      `https://api-sdk.zora.engineering/token/${tokenAddress}?chainId=8453`,
+      { headers }
+    );
+
+    if (response.ok) {
+      const data = await response.json();
+      const name = data.name || data.symbol || 'Token';
+      
+      // Cache the result
+      const symbol = data.symbol || await fetchTokenSymbol(tokenAddress);
+      const decimals = data.decimals || await fetchTokenDecimals(tokenAddress);
+      
+      tokenMetadataCache.set(cacheKey, {
+        name,
+        symbol: symbol || '',
+        decimals,
+        cachedAt: Date.now(),
+      });
+      
+      return name;
+    }
+  } catch (error) {
+    console.error('[Token Metadata] Error fetching token name:', error);
+  }
+
+  // Final fallback: try to get symbol from contract
+  try {
+    const symbol = await fetchTokenSymbol(tokenAddress);
+    if (symbol) {
+      return symbol;
+    }
+  } catch (error) {
+    console.error('[Token Metadata] Error fetching token symbol:', error);
+  }
+
+  // Ultimate fallback
+  return 'Token';
 }
