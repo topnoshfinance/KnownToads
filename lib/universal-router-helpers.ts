@@ -1,10 +1,23 @@
-import { Address, encodeFunctionData, encodeAbiParameters, parseAbiParameters } from 'viem';
+import { Address, encodeFunctionData, encodeAbiParameters, parseAbiParameters, formatUnits } from 'viem';
 
 // Universal Router on Base
 export const UNIVERSAL_ROUTER_ADDRESS = '0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD' as Address;
 
 // USDC on Base
 export const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as Address;
+
+// Default slippage tolerance in basis points (10%)
+export const DEFAULT_SLIPPAGE_BPS = 1000;
+
+// High slippage warning threshold in basis points (10%)
+export const HIGH_SLIPPAGE_WARNING_BPS = 1000;
+
+// Default fee tier for Uniswap V3 (0.3%)
+// NOTE: This may not exist for all token pairs. In production, consider:
+// 1. Implementing fee tier detection via pool queries
+// 2. Trying multiple fee tiers as fallbacks (500, 3000, 10000 basis points)
+// 3. Using a quoter contract to find the best route
+export const DEFAULT_FEE_TIER = 3000;
 
 // Commands for Universal Router
 const Commands = {
@@ -49,22 +62,24 @@ function encodeV3Path(tokenIn: Address, tokenOut: Address, fee: number): `0x${st
 /**
  * Get swap quote from Universal Router
  * Note: Universal Router doesn't have a quote endpoint, so we estimate based on typical slippage
- * In production, consider using Uniswap V3 Quoter contract for accurate quotes
+ * 
+ * LIMITATION: This currently assumes 1:1 exchange rate which is a placeholder.
+ * In production, you should:
+ * 1. Use Uniswap V3 Quoter contract (0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a on Base)
+ * 2. Query actual pool reserves and calculate exact quotes
+ * 3. Or accept that users will only know minimum output after slippage
  */
 export async function getUniversalRouterQuote(
   sellToken: Address,
   buyToken: Address,
   sellAmount: bigint,
-  slippageBps: number = 1000 // 10% default
+  slippageBps: number = DEFAULT_SLIPPAGE_BPS
 ): Promise<{ amountOutMinimum: bigint; estimatedOut: bigint } | null> {
   try {
-    // For now, we'll use a conservative estimate
-    // TODO: Implement proper Quoter V2 integration for accurate quotes
-    // Quoter V2 on Base: 0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a
-    
-    console.log('[Universal Router] Quote estimation (placeholder)');
+    console.log('[Universal Router] Quote estimation (placeholder - needs Quoter integration)');
     
     // Conservative estimate: assume 1:1 for now (needs proper quoter)
+    // TODO: Implement proper Quoter V2 integration for accurate quotes
     const slippageFactor = BigInt(10000 - slippageBps);
     const estimatedOut = sellAmount; // Placeholder: should query actual pool
     const amountOutMinimum = (estimatedOut * slippageFactor) / 10000n;
@@ -88,7 +103,7 @@ export async function getUniversalRouterSwapTransaction(
   buyToken: Address,
   sellAmount: bigint,
   recipient: Address,
-  slippageBps: number = 1000
+  slippageBps: number = DEFAULT_SLIPPAGE_BPS
 ): Promise<{ to: Address; data: string; value: string } | null> {
   try {
     console.log('[Universal Router] Building swap transaction...');
@@ -106,9 +121,8 @@ export async function getUniversalRouterSwapTransaction(
       return null;
     }
 
-    // Encode the V3 path (using 0.3% fee tier as default)
-    const fee = 3000; // 0.3% fee tier
-    const path = encodeV3Path(sellToken, buyToken, fee);
+    // Encode the V3 path (using default fee tier)
+    const path = encodeV3Path(sellToken, buyToken, DEFAULT_FEE_TIER);
     
     // Encode V3 swap parameters
     const swapParams = encodeV3SwapExactIn(
@@ -193,8 +207,9 @@ export function formatExchangeRate(
   inputDecimals: number = 6,
   outputDecimals: number = 18
 ): string {
-  const inputAmount = Number(amountIn) / Math.pow(10, inputDecimals);
-  const outputAmount = Number(amountOut) / Math.pow(10, outputDecimals);
+  // Convert using formatUnits to avoid BigInt precision loss
+  const inputAmount = parseFloat(formatUnits(amountIn, inputDecimals));
+  const outputAmount = parseFloat(formatUnits(amountOut, outputDecimals));
   
   if (inputAmount === 0) return `1 ${inputSymbol} ≈ 0 ${outputSymbol}`;
   

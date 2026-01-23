@@ -10,6 +10,8 @@ import {
   getUniversalRouterQuote,
   getUniversalRouterSwapTransaction,
   formatExchangeRate,
+  DEFAULT_SLIPPAGE_BPS,
+  HIGH_SLIPPAGE_WARNING_BPS,
 } from '@/lib/universal-router-helpers';
 import { fetchTokenInfo } from '@/lib/token-helpers';
 
@@ -159,7 +161,7 @@ export function SwapModal({
       setError(null);
 
       const amountIn = parseUnits(amount, 6); // USDC has 6 decimals
-      const slippageBps = 1000; // 10% default
+      const slippageBps = DEFAULT_SLIPPAGE_BPS;
       
       // Get quote from Universal Router
       const quoteResult = await getUniversalRouterQuote(
@@ -175,7 +177,7 @@ export function SwapModal({
         setSwapTxData(null);
         setShowSlippageWarning(false);
       } else {
-        const highSlippageWarning = slippageBps >= 1000;
+        const highSlippageWarning = slippageBps >= HIGH_SLIPPAGE_WARNING_BPS;
         setQuote({
           amountOut: quoteResult.estimatedOut,
           amountOutMinimum: quoteResult.amountOutMinimum,
