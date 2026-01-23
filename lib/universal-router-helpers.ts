@@ -54,6 +54,9 @@ const V4Actions = {
   SWEEP: '0x18',
 } as const;
 
+// Empty hook data constant for V4 swaps
+const EMPTY_HOOK_DATA = '0x' as const;
+
 /**
  * Encode V3 swap parameters for Universal Router
  * Using V3 since it's more widely supported than V4
@@ -92,7 +95,7 @@ function encodeV4SwapExactInSingle(
   zeroForOne: boolean,
   amountIn: bigint,
   amountOutMinimum: bigint,
-  hookData: `0x${string}` = '0x'
+  hookData: `0x${string}` = '0x' as const
 ): `0x${string}` {
   // Parameters for SWAP_EXACT_IN_SINGLE action:
   // - PoolKey struct (currency0, currency1, fee, tickSpacing, hooks)
@@ -299,7 +302,13 @@ export async function getUniversalRouterSwapTransaction(
     // 2. SWAP_EXACT_IN_SINGLE - execute swap
     // 3. TAKE_ALL - withdraw output tokens
     
-    const actions = `0x${V4Actions.SETTLE_ALL.slice(2)}${V4Actions.SWAP_EXACT_IN_SINGLE.slice(2)}${V4Actions.TAKE_ALL.slice(2)}` as `0x${string}`;
+    // Concatenate action bytes properly
+    const actionBytes = [
+      V4Actions.SETTLE_ALL,
+      V4Actions.SWAP_EXACT_IN_SINGLE,
+      V4Actions.TAKE_ALL,
+    ].map(action => action.slice(2)).join('');
+    const actions = `0x${actionBytes}` as `0x${string}`;
     
     // Encode parameters for each action
     const settleParams = encodeAbiParameters(
@@ -312,12 +321,13 @@ export async function getUniversalRouterSwapTransaction(
       zeroForOne,
       sellAmount,
       quote.amountOutMinimum,
-      '0x' // No hook data
+      EMPTY_HOOK_DATA
     );
     
+    // TAKE_ALL with CONTRACT_BALANCE (type(uint128).max) to take all available tokens
     const takeParams = encodeAbiParameters(
       parseAbiParameters('address currency, address recipient, uint256 amount'),
-      [buyToken, recipient, quote.amountOutMinimum]
+      [buyToken, recipient, 0n] // 0 means take all available balance in V4
     );
     
     // Combine all action parameters
