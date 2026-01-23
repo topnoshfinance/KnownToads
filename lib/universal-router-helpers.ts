@@ -1,4 +1,6 @@
 import { Address, encodeFunctionData, encodeAbiParameters, parseAbiParameters, formatUnits } from 'viem';
+import { getV4Quote, PoolKey } from './v4-quoter-helpers';
+import { detectPoolsWithZoraFallback } from './pool-detection-helpers';
 
 // Universal Router on Base
 export const UNIVERSAL_ROUTER_ADDRESS = '0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD' as Address;
@@ -60,43 +62,55 @@ function encodeV3Path(tokenIn: Address, tokenOut: Address, fee: number): `0x${st
 }
 
 /**
- * Get swap quote from Universal Router
- * Note: Universal Router doesn't have a quote endpoint, so we estimate based on typical slippage
- * 
- * LIMITATION: This currently assumes 1:1 exchange rate which is a placeholder.
- * In production, you should:
- * 1. Use Uniswap V3 Quoter contract (0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a on Base)
- * 2. Query actual pool reserves and calculate exact quotes
- * 3. Or accept that users will only know minimum output after slippage
+ * Get swap quote using V4 Quoter with automatic pool detection
  */
 export async function getUniversalRouterQuote(
   sellToken: Address,
   buyToken: Address,
   sellAmount: bigint,
   slippageBps: number = DEFAULT_SLIPPAGE_BPS
-): Promise<{ amountOutMinimum: bigint; estimatedOut: bigint } | null> {
-  try {
-    console.log('[Universal Router] Quote estimation (placeholder - needs Quoter integration)');
-    
-    // Conservative estimate: assume 1:1 for now (needs proper quoter)
-    // TODO: Implement proper Quoter V2 integration for accurate quotes
-    const slippageFactor = BigInt(10000 - slippageBps);
-    const estimatedOut = sellAmount; // Placeholder: should query actual pool
-    const amountOutMinimum = (estimatedOut * slippageFactor) / 10000n;
-    
-    return {
-      amountOutMinimum,
-      estimatedOut,
-    };
-  } catch (error) {
-    console.error('[Universal Router] Error getting quote:', error);
+): Promise<{ amountOut: bigint; amountOutMinimum: bigint; gasEstimate: bigint; poolKey?: PoolKey } | null> {
+  console.log('[Universal Router] Starting quote with pool detection...');
+  
+  // Step 1: Detect pools for the buy token
+  const poolDetection = await detectPoolsWithZoraFallback(buyToken);
+  
+  if (!poolDetection.found || !poolDetection.primaryPool) {
+    console.error('[Universal Router] No pools found for token');
     return null;
   }
+
+  const poolKey = poolDetection.primaryPool;
+  console.log('[Universal Router] Using pool:', poolKey);
+
+  // Step 2: Get quote from V4 Quoter
+  const quote = await getV4Quote(poolKey, sellToken, buyToken, sellAmount);
+  
+  if (!quote) {
+    console.error('[Universal Router] Quote failed');
+    return null;
+  }
+
+  // Step 3: Calculate minimum output with slippage
+  const amountOutMinimum = calculateMinimumOutput(quote.amountOut, slippageBps);
+
+  console.log('[Universal Router] ✓ Quote complete', {
+    amountOut: quote.amountOut.toString(),
+    amountOutMinimum: amountOutMinimum.toString(),
+    slippageBps,
+  });
+
+  return {
+    amountOut: quote.amountOut,
+    amountOutMinimum,
+    gasEstimate: quote.gasEstimate,
+    poolKey,
+  };
 }
 
 /**
- * Build Universal Router swap transaction
- * Uses V3 swap exact input command
+ * Build Universal Router swap transaction with pool detection
+ * Uses V4 Quoter for accurate pricing but executes via Universal Router V3
  */
 export async function getUniversalRouterSwapTransaction(
   sellToken: Address,
@@ -104,7 +118,7 @@ export async function getUniversalRouterSwapTransaction(
   sellAmount: bigint,
   recipient: Address,
   slippageBps: number = DEFAULT_SLIPPAGE_BPS
-): Promise<{ to: Address; data: string; value: string } | null> {
+): Promise<{ to: Address; data: string; value: string; poolKey?: PoolKey } | null> {
   try {
     console.log('[Universal Router] Building swap transaction...');
     console.log('[Universal Router] Params:', {
@@ -115,14 +129,18 @@ export async function getUniversalRouterSwapTransaction(
       slippageBps,
     });
     
+    // Get quote with pool detection
     const quote = await getUniversalRouterQuote(sellToken, buyToken, sellAmount, slippageBps);
     if (!quote) {
       console.error('[Universal Router] Failed to get quote');
       return null;
     }
 
-    // Encode the V3 path (using default fee tier)
-    const path = encodeV3Path(sellToken, buyToken, DEFAULT_FEE_TIER);
+    // Use the fee from detected pool if available, otherwise use default
+    const feeTier = quote.poolKey?.fee || DEFAULT_FEE_TIER;
+    
+    // Encode the V3 path (using detected or default fee tier)
+    const path = encodeV3Path(sellToken, buyToken, feeTier);
     
     // Encode V3 swap parameters
     const swapParams = encodeV3SwapExactIn(
@@ -163,13 +181,14 @@ export async function getUniversalRouterSwapTransaction(
     });
 
     console.log('[Universal Router] ✓ Transaction built successfully');
-    console.log('[Universal Router] Estimated out:', quote.estimatedOut.toString());
+    console.log('[Universal Router] Expected out:', quote.amountOut.toString());
     console.log('[Universal Router] Min out:', quote.amountOutMinimum.toString());
     
     return {
       to: UNIVERSAL_ROUTER_ADDRESS,
       data,
       value: '0', // No ETH needed for ERC20 swaps
+      poolKey: quote.poolKey,
     };
   } catch (error) {
     console.error('[Universal Router] Error building transaction:', error);

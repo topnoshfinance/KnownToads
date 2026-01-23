@@ -179,7 +179,7 @@ export function SwapModal({
       } else {
         const highSlippageWarning = slippageBps >= HIGH_SLIPPAGE_WARNING_BPS;
         setQuote({
-          amountOut: quoteResult.estimatedOut,
+          amountOut: quoteResult.amountOut,
           amountOutMinimum: quoteResult.amountOutMinimum,
           slippageBps,
           highSlippageWarning,
