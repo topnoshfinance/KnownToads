@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { parseUnits, Address } from 'viem';
 import {
-  ZEROX_EXCHANGE_PROXY,
+  UNIVERSAL_ROUTER_ADDRESS,
   USDC_ADDRESS,
-  get0xSwapTransaction,
-} from '@/lib/0x-helpers';
+  getUniversalRouterSwapTransaction,
+} from '@/lib/universal-router-helpers';
 
 export async function POST(
   request: NextRequest,
@@ -25,15 +25,16 @@ export async function POST(
     // Amount: 1 USDC (6 decimals)
     const amountIn = parseUnits('1', 6);
 
-    // Get swap transaction from 0x API
-    const swapTxResult = await get0xSwapTransaction(
+    // Get swap transaction from Universal Router
+    const swapTx = await getUniversalRouterSwapTransaction(
       USDC_ADDRESS,
       address as Address,
       amountIn,
-      userAddress as Address
+      userAddress as Address,
+      1000 // 10% slippage
     );
 
-    if (!swapTxResult) {
+    if (!swapTx) {
       return NextResponse.json(
         { 
           error: 'No liquidity available for this token pair. The token may not be tradeable or may exist only on unsupported DEXs.',
@@ -47,9 +48,9 @@ export async function POST(
       chainId: `eip155:${process.env.NEXT_PUBLIC_BASE_CHAIN_ID || '8453'}`,
       method: 'eth_sendTransaction',
       params: {
-        to: swapTxResult.quote.to,
-        data: swapTxResult.quote.data,
-        value: swapTxResult.quote.value,
+        to: swapTx.to,
+        data: swapTx.data,
+        value: swapTx.value,
       },
     });
   } catch (error) {

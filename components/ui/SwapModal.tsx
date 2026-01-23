@@ -5,15 +5,14 @@ import { useAccount, useSendTransaction, useWriteContract, useWaitForTransaction
 import { parseUnits, formatUnits, Address } from 'viem';
 import { base } from 'wagmi/chains';
 import {
-  ZEROX_EXCHANGE_PROXY,
+  UNIVERSAL_ROUTER_ADDRESS,
   USDC_ADDRESS,
-  getSwapQuote,
-  getSwapTransaction,
+  getUniversalRouterQuote,
+  getUniversalRouterSwapTransaction,
   formatExchangeRate,
-  QuoteResult,
-  SwapProvider,
+  DEFAULT_SLIPPAGE_BPS,
   HIGH_SLIPPAGE_WARNING_BPS,
-} from '@/lib/0x-helpers';
+} from '@/lib/universal-router-helpers';
 import { fetchTokenInfo } from '@/lib/token-helpers';
 
 // ERC-20 ABI for approve function
@@ -58,6 +57,13 @@ interface SwapModalProps {
 
 type SwapStep = 'input' | 'approving' | 'swapping' | 'success' | 'error';
 
+interface QuoteResult {
+  amountOut: bigint;
+  amountOutMinimum: bigint;
+  slippageBps: number;
+  highSlippageWarning?: boolean;
+}
+
 export function SwapModal({
   isOpen,
   onClose,
@@ -95,12 +101,12 @@ export function SwapModal({
 
   const usdcBalance = usdcBalanceData as bigint | undefined;
 
-  // Check USDC allowance
+  // Check USDC allowance for Universal Router
   const { data: allowance, refetch: refetchAllowance } = useReadContract({
     address: USDC_ADDRESS,
     abi: ERC20_ABI,
     functionName: 'allowance',
-    args: userAddress ? [userAddress, ZEROX_EXCHANGE_PROXY] : undefined,
+    args: userAddress ? [userAddress, UNIVERSAL_ROUTER_ADDRESS] : undefined,
     chainId: base.id,
   });
 
@@ -132,10 +138,7 @@ export function SwapModal({
 
   // Helper function to get provider display name
   const getProviderDisplay = (): string => {
-    if (!quote?.provider) return 'Zora, 0x & Uniswap V4';
-    if (quote.provider === 'zora') return 'Zora (Fallback)';
-    if (quote.provider === 'uniswap-v4') return 'Uniswap V4 (Direct)';
-    return '0x Protocol';
+    return 'Uniswap Universal Router';
   };
 
   // Helper function to get slippage display
@@ -158,13 +161,14 @@ export function SwapModal({
       setError(null);
 
       const amountIn = parseUnits(amount, 6); // USDC has 6 decimals
+      const slippageBps = DEFAULT_SLIPPAGE_BPS;
       
-      // Use smart routing: Try Zora first, fallback to 0x
-      const quoteResult = await getSwapQuote(
+      // Get quote from Universal Router
+      const quoteResult = await getUniversalRouterQuote(
         USDC_ADDRESS,
         tokenAddress as Address,
         amountIn,
-        userAddress
+        slippageBps
       );
 
       if (!quoteResult) {
@@ -173,14 +177,15 @@ export function SwapModal({
         setSwapTxData(null);
         setShowSlippageWarning(false);
       } else {
-        setQuote(quoteResult);
-        // Check for high slippage warning
-        if (quoteResult.highSlippageWarning) {
-          setShowSlippageWarning(true);
-        } else {
-          setShowSlippageWarning(false);
-        }
-        // Note: We'll fetch the full transaction data when executing the swap
+        const highSlippageWarning = slippageBps >= HIGH_SLIPPAGE_WARNING_BPS;
+        setQuote({
+          amountOut: quoteResult.estimatedOut,
+          amountOutMinimum: quoteResult.amountOutMinimum,
+          slippageBps,
+          highSlippageWarning,
+        });
+        // Show high slippage warning if >= 10%
+        setShowSlippageWarning(highSlippageWarning);
         setSwapTxData(null);
       }
     } catch (err) {
@@ -204,7 +209,7 @@ export function SwapModal({
         address: USDC_ADDRESS,
         abi: ERC20_ABI,
         functionName: 'approve',
-        args: [ZEROX_EXCHANGE_PROXY, amountInWei],
+        args: [UNIVERSAL_ROUTER_ADDRESS, amountInWei],
         chainId: base.id,
       });
     } catch (err) {
@@ -224,19 +229,20 @@ export function SwapModal({
       
       const amountIn = parseUnits(amount, 6); // USDC has 6 decimals
 
-      // Get swap transaction using smart routing (Zora first, then 0x)
-      const swapTx = await getSwapTransaction(
+      // Get swap transaction from Universal Router
+      const swapTx = await getUniversalRouterSwapTransaction(
         USDC_ADDRESS,
         tokenAddress as Address,
         amountIn,
-        userAddress
+        userAddress,
+        quote.slippageBps
       );
 
       if (!swapTx) {
         throw new Error('Failed to get swap transaction. No liquidity available.');
       }
 
-      // Send the transaction using the data from the swap provider
+      // Send the transaction
       sendSwapTx({
         to: swapTx.to as Address,
         data: swapTx.data as `0x${string}`,
@@ -364,17 +370,12 @@ export function SwapModal({
 
   return (
     <div
+      className="swap-modal-overlay"
       style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
         background: 'rgba(0, 0, 0, 0.5)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 99999, // Increased z-index to ensure modal appears on top of all profile cards
         padding: 'var(--spacing-md)',
       }}
       onClick={handleClose}
@@ -388,6 +389,8 @@ export function SwapModal({
           width: '100%',
           boxShadow: 'var(--shadow-lg)',
           border: '2px solid var(--toby-blue)',
+          position: 'relative',
+          zIndex: 100000,
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -626,17 +629,6 @@ export function SwapModal({
                       fontWeight: quote.highSlippageWarning ? 'var(--font-semibold)' : 'normal',
                     }}>
                       <span style={{ fontWeight: 'var(--font-semibold)' }}>Slippage:</span> {getSlippageDisplay()}
-                    </div>
-                  )}
-                  
-                  {/* Price Impact Display */}
-                  {quote.priceImpact && (
-                    <div style={{ 
-                      fontSize: 'var(--text-xs)',
-                      color: 'var(--text-secondary)',
-                      marginTop: 'var(--spacing-xs)',
-                    }}>
-                      <span style={{ fontWeight: 'var(--font-semibold)' }}>Price Impact:</span> {quote.priceImpact}%
                     </div>
                   )}
                 </>

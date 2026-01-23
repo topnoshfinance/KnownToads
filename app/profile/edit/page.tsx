@@ -30,6 +30,45 @@ export default function ProfileEditPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [existingProfile, setExistingProfile] = useState<Partial<ProfileFormData> | null>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+
+  // Fetch existing profile data when component mounts
+  useEffect(() => {
+    async function fetchProfile() {
+      if (!farcasterContext.fid) {
+        setIsLoadingProfile(false);
+        return;
+      }
+      
+      try {
+        setIsLoadingProfile(true);
+        const { data, error: fetchError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('fid', farcasterContext.fid)
+          .single();
+        
+        if (data && !fetchError) {
+          // Map database fields to form fields
+          setExistingProfile({
+            creator_coin_address: data.creator_coin_address || '',
+            bio: data.bio || '',
+            x_handle: data.x_handle || '',
+            telegram_handle: data.telegram_handle || '',
+            zora_page_url: data.zora_page_url || '',
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+        // Don't show error to user, just proceed with empty form
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    }
+
+    fetchProfile();
+  }, [farcasterContext.fid]);
 
   async function handleConnect() {
     const connector = frameConnector();
@@ -153,6 +192,20 @@ export default function ProfileEditPage() {
     );
   }
 
+  // Show loading state while fetching existing profile
+  if (isLoadingProfile) {
+    return (
+      <div style={{ minHeight: '100vh' }}>
+        <Header />
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: 'var(--spacing-xl)' }}>
+          <div className="toad-card" style={{ padding: 'var(--spacing-2xl)', textAlign: 'center' }}>
+            <p style={{ color: 'var(--text-secondary)' }}>Loading your profile...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ minHeight: '100vh' }}>
       <Header />
@@ -229,7 +282,7 @@ export default function ProfileEditPage() {
             </div>
           )}
 
-          <ProfileForm onSubmit={handleSubmit} isLoading={isLoading} />
+          <ProfileForm onSubmit={handleSubmit} isLoading={isLoading} initialData={existingProfile || undefined} />
 
           <div className="info-card" style={{ marginTop: 'var(--spacing-lg)' }}>
             <h3 style={{ 

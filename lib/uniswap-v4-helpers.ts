@@ -1,3 +1,11 @@
+/**
+ * @deprecated This file contains legacy Uniswap V4 direct PoolManager integration.
+ * The application now uses Uniswap Universal Router exclusively.
+ * This file should not be used in new code.
+ * 
+ * See: lib/universal-router-helpers.ts for the new implementation.
+ */
+
 import { Address, encodeFunctionData, parseUnits } from 'viem';
 import { ZoraPoolMetadata } from './zora-pool-helpers';
 

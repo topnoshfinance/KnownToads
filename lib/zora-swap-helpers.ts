@@ -1,3 +1,11 @@
+/**
+ * @deprecated This file contains legacy Zora swap integration.
+ * The application now uses Uniswap Universal Router exclusively.
+ * This file should not be used in new code.
+ * 
+ * See: lib/universal-router-helpers.ts for the new implementation.
+ */
+
 import { Address } from 'viem';
 
 // Zora API configuration
