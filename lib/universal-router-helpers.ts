@@ -23,13 +23,35 @@ export const DEFAULT_FEE_TIER = 3000;
 
 // Commands for Universal Router
 const Commands = {
+  // V3 commands (kept for backwards compatibility)
   V3_SWAP_EXACT_IN: '0x00',
   V3_SWAP_EXACT_OUT: '0x01',
+  // V4 command
+  V4_SWAP: '0x10',
+  // Other commands
   PERMIT2_TRANSFER_FROM: '0x0a',
   PERMIT2_PERMIT_BATCH: '0x0b',
   SWEEP: '0x0c',
   TRANSFER: '0x0d',
   PAY_PORTION: '0x0e',
+} as const;
+
+// V4 Actions for swap encoding
+// Based on Uniswap V4 documentation
+const V4Actions = {
+  SWAP_EXACT_IN_SINGLE: '0x00',
+  SWAP_EXACT_IN: '0x01',
+  SWAP_EXACT_OUT_SINGLE: '0x02',
+  SWAP_EXACT_OUT: '0x03',
+  SETTLE_ALL: '0x10',
+  SETTLE_PAIR: '0x11',
+  TAKE_ALL: '0x12',
+  TAKE_PAIR: '0x13',
+  SETTLE: '0x14',
+  TAKE: '0x15',
+  CLOSE_CURRENCY: '0x16',
+  CLEAR_OR_TAKE: '0x17',
+  SWEEP: '0x18',
 } as const;
 
 /**
@@ -59,6 +81,48 @@ function encodeV3Path(tokenIn: Address, tokenOut: Address, fee: number): `0x${st
   const feeHex = fee.toString(16).padStart(6, '0'); // 3 bytes = 6 hex chars
   
   return `0x${tokenInHex}${feeHex}${tokenOutHex}` as `0x${string}`;
+}
+
+/**
+ * Encode V4 swap action parameters for Universal Router
+ * Based on Uniswap V4 documentation
+ */
+function encodeV4SwapExactInSingle(
+  poolKey: PoolKey,
+  zeroForOne: boolean,
+  amountIn: bigint,
+  amountOutMinimum: bigint,
+  hookData: `0x${string}` = '0x'
+): `0x${string}` {
+  // Parameters for SWAP_EXACT_IN_SINGLE action:
+  // - PoolKey struct (currency0, currency1, fee, tickSpacing, hooks)
+  // - bool zeroForOne (direction of swap)
+  // - uint128 amountIn
+  // - uint128 amountOutMinimum
+  // - bytes hookData
+  
+  return encodeAbiParameters(
+    parseAbiParameters([
+      '(address currency0, address currency1, uint24 fee, int24 tickSpacing, address hooks) poolKey',
+      'bool zeroForOne',
+      'uint128 amountIn',
+      'uint128 amountOutMinimum',
+      'bytes hookData'
+    ].join(', ')),
+    [
+      {
+        currency0: poolKey.currency0,
+        currency1: poolKey.currency1,
+        fee: poolKey.fee,
+        tickSpacing: poolKey.tickSpacing,
+        hooks: poolKey.hooks,
+      },
+      zeroForOne,
+      amountIn,
+      amountOutMinimum,
+      hookData,
+    ]
+  );
 }
 
 /**
@@ -109,10 +173,10 @@ export async function getUniversalRouterQuote(
 }
 
 /**
- * Build Universal Router swap transaction with pool detection
- * Uses V4 Quoter for accurate pricing but executes via Universal Router V3
+ * Build Universal Router swap transaction using V3 commands (legacy)
+ * Kept as fallback for V3 pools
  */
-export async function getUniversalRouterSwapTransaction(
+export async function getUniversalRouterSwapTransactionV3(
   sellToken: Address,
   buyToken: Address,
   sellAmount: bigint,
@@ -120,8 +184,8 @@ export async function getUniversalRouterSwapTransaction(
   slippageBps: number = DEFAULT_SLIPPAGE_BPS
 ): Promise<{ to: Address; data: string; value: string; poolKey?: PoolKey } | null> {
   try {
-    console.log('[Universal Router] Building swap transaction...');
-    console.log('[Universal Router] Params:', {
+    console.log('[Universal Router V3] Building swap transaction...');
+    console.log('[Universal Router V3] Params:', {
       sellToken,
       buyToken,
       sellAmount: sellAmount.toString(),
@@ -132,7 +196,7 @@ export async function getUniversalRouterSwapTransaction(
     // Get quote with pool detection
     const quote = await getUniversalRouterQuote(sellToken, buyToken, sellAmount, slippageBps);
     if (!quote) {
-      console.error('[Universal Router] Failed to get quote');
+      console.error('[Universal Router V3] Failed to get quote');
       return null;
     }
 
@@ -180,7 +244,122 @@ export async function getUniversalRouterSwapTransaction(
       ],
     });
 
-    console.log('[Universal Router] ✓ Transaction built successfully');
+    console.log('[Universal Router V3] ✓ Transaction built successfully');
+    console.log('[Universal Router V3] Expected out:', quote.amountOut.toString());
+    console.log('[Universal Router V3] Min out:', quote.amountOutMinimum.toString());
+    
+    return {
+      to: UNIVERSAL_ROUTER_ADDRESS,
+      data,
+      value: '0', // No ETH needed for ERC20 swaps
+      poolKey: quote.poolKey,
+    };
+  } catch (error) {
+    console.error('[Universal Router V3] Error building transaction:', error);
+    return null;
+  }
+}
+
+/**
+ * Build Universal Router swap transaction using V4 commands
+ * Uses V4_SWAP command (0x10) with proper action sequence
+ */
+export async function getUniversalRouterSwapTransaction(
+  sellToken: Address,
+  buyToken: Address,
+  sellAmount: bigint,
+  recipient: Address,
+  slippageBps: number = DEFAULT_SLIPPAGE_BPS
+): Promise<{ to: Address; data: string; value: string; poolKey?: PoolKey } | null> {
+  try {
+    console.log('[Universal Router] Building V4 swap transaction...');
+    
+    // Get quote with pool detection
+    const quote = await getUniversalRouterQuote(sellToken, buyToken, sellAmount, slippageBps);
+    if (!quote || !quote.poolKey) {
+      console.error('[Universal Router] Failed to get quote or pool key');
+      return null;
+    }
+
+    const poolKey = quote.poolKey;
+    
+    // Determine swap direction (zeroForOne)
+    // If selling currency0, zeroForOne = true; if selling currency1, zeroForOne = false
+    const zeroForOne = sellToken.toLowerCase() === poolKey.currency0.toLowerCase();
+    
+    console.log('[Universal Router] Swap direction:', { 
+      zeroForOne, 
+      sellToken, 
+      currency0: poolKey.currency0, 
+      currency1: poolKey.currency1 
+    });
+
+    // Build V4 action sequence:
+    // 1. SETTLE_ALL - deposit input tokens
+    // 2. SWAP_EXACT_IN_SINGLE - execute swap
+    // 3. TAKE_ALL - withdraw output tokens
+    
+    const actions = `0x${V4Actions.SETTLE_ALL.slice(2)}${V4Actions.SWAP_EXACT_IN_SINGLE.slice(2)}${V4Actions.TAKE_ALL.slice(2)}` as `0x${string}`;
+    
+    // Encode parameters for each action
+    const settleParams = encodeAbiParameters(
+      parseAbiParameters('address currency, uint256 amount, bool payerIsUser'),
+      [sellToken, sellAmount, true]
+    );
+    
+    const swapParams = encodeV4SwapExactInSingle(
+      poolKey,
+      zeroForOne,
+      sellAmount,
+      quote.amountOutMinimum,
+      '0x' // No hook data
+    );
+    
+    const takeParams = encodeAbiParameters(
+      parseAbiParameters('address currency, address recipient, uint256 amount'),
+      [buyToken, recipient, quote.amountOutMinimum]
+    );
+    
+    // Combine all action parameters
+    const params = [settleParams, swapParams, takeParams];
+    
+    // Encode the V4_SWAP input
+    const v4SwapInput = encodeAbiParameters(
+      parseAbiParameters('bytes actions, bytes[] params'),
+      [actions, params]
+    );
+
+    // Calculate deadline (5 minutes from now)
+    const deadline = BigInt(Math.floor(Date.now() / 1000) + 300);
+
+    // Universal Router execute ABI
+    const executeAbi = [
+      {
+        name: 'execute',
+        type: 'function',
+        stateMutability: 'payable',
+        inputs: [
+          { name: 'commands', type: 'bytes' },
+          { name: 'inputs', type: 'bytes[]' },
+          { name: 'deadline', type: 'uint256' },
+        ],
+        outputs: [],
+      },
+    ] as const;
+
+    // Encode the execute function call with V4_SWAP command
+    const data = encodeFunctionData({
+      abi: executeAbi,
+      functionName: 'execute',
+      args: [
+        Commands.V4_SWAP, // Use 0x10 for V4 swaps
+        [v4SwapInput], // V4 swap input
+        deadline,
+      ],
+    });
+
+    console.log('[Universal Router] ✓ V4 transaction built successfully');
+    console.log('[Universal Router] Pool:', poolKey);
     console.log('[Universal Router] Expected out:', quote.amountOut.toString());
     console.log('[Universal Router] Min out:', quote.amountOutMinimum.toString());
     
@@ -191,7 +370,7 @@ export async function getUniversalRouterSwapTransaction(
       poolKey: quote.poolKey,
     };
   } catch (error) {
-    console.error('[Universal Router] Error building transaction:', error);
+    console.error('[Universal Router] Error building V4 transaction:', error);
     return null;
   }
 }
