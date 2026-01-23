@@ -1,8 +1,8 @@
-import { Address, encodeFunctionData, createPublicClient, http } from 'viem';
+import { Address, createPublicClient, http } from 'viem';
 import { base } from 'viem/chains';
 
 // Uniswap V4 Quoter on Base
-export const V4_QUOTER_ADDRESS = '0x0d5e0f971ed27fbff6c2837bf31316121532048d' as Address;
+export const V4_QUOTER_ADDRESS = (process.env.NEXT_PUBLIC_UNISWAP_V4_QUOTER || '0x0d5e0f971ed27fbff6c2837bf31316121532048d') as Address;
 
 // Pool key structure for V4
 export interface PoolKey {

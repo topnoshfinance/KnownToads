@@ -1,5 +1,5 @@
 import { Address, encodeFunctionData, encodeAbiParameters, parseAbiParameters, formatUnits } from 'viem';
-import { getV4Quote, calculateMinimumOutput as calculateMinOutput, PoolKey } from './v4-quoter-helpers';
+import { getV4Quote, PoolKey } from './v4-quoter-helpers';
 import { detectPoolsWithZoraFallback } from './pool-detection-helpers';
 
 // Universal Router on Base
@@ -92,7 +92,7 @@ export async function getUniversalRouterQuote(
   }
 
   // Step 3: Calculate minimum output with slippage
-  const amountOutMinimum = calculateMinOutput(quote.amountOut, slippageBps);
+  const amountOutMinimum = calculateMinimumOutput(quote.amountOut, slippageBps);
 
   console.log('[Universal Router] ✓ Quote complete', {
     amountOut: quote.amountOut.toString(),

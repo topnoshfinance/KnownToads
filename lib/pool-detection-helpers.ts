@@ -3,7 +3,7 @@ import { base } from 'viem/chains';
 import { PoolKey } from './v4-quoter-helpers';
 
 // Uniswap V4 PoolManager on Base
-const POOL_MANAGER_ADDRESS = '0x498581ff718922c3f8e6a244956af099b2652b2b' as Address;
+const POOL_MANAGER_ADDRESS = (process.env.NEXT_PUBLIC_UNISWAP_V4_POOL_MANAGER || '0x498581ff718922c3f8e6a244956af099b2652b2b') as Address;
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as Address;
 
 // Create viem client
@@ -59,6 +59,8 @@ export async function detectV4Pools(
     );
 
     // Scan last 10,000 blocks (adjust based on network activity)
+    // Base block time is ~2 seconds, so 10,000 blocks = ~5.5 hours
+    // This provides recent pool data while avoiding overly expensive queries
     const currentBlock = await baseClient.getBlockNumber();
     const fromBlock = currentBlock - 10000n;
 
