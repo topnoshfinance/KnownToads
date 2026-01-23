@@ -174,3 +174,43 @@ export function calculateMinimumOutput(
   const slippageFactorBigInt = BigInt(slippageFactor);
   return (expectedOutput * slippageFactorBigInt) / 10000n;
 }
+
+/**
+ * Format exchange rate for display
+ * @param amountIn - Input amount
+ * @param amountOut - Output amount
+ * @param inputSymbol - Input token symbol
+ * @param outputSymbol - Output token symbol
+ * @param inputDecimals - Input token decimals
+ * @param outputDecimals - Output token decimals
+ * @returns Formatted exchange rate string
+ */
+export function formatExchangeRate(
+  amountIn: bigint,
+  amountOut: bigint,
+  inputSymbol: string,
+  outputSymbol: string,
+  inputDecimals: number = 6,
+  outputDecimals: number = 18
+): string {
+  const inputAmount = Number(amountIn) / Math.pow(10, inputDecimals);
+  const outputAmount = Number(amountOut) / Math.pow(10, outputDecimals);
+  
+  if (inputAmount === 0) return `1 ${inputSymbol} ≈ 0 ${outputSymbol}`;
+  
+  const rate = outputAmount / inputAmount;
+  
+  // Format rate with appropriate precision
+  let formattedRate: string;
+  if (rate > 1000) {
+    formattedRate = rate.toFixed(0);
+  } else if (rate > 1) {
+    formattedRate = rate.toFixed(2);
+  } else if (rate > 0.01) {
+    formattedRate = rate.toFixed(4);
+  } else {
+    formattedRate = rate.toExponential(2);
+  }
+  
+  return `1 ${inputSymbol} ≈ ${formattedRate} ${outputSymbol}`;
+}

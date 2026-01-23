@@ -282,7 +282,7 @@ export default function ProfileEditPage() {
             </div>
           )}
 
-          <ProfileForm onSubmit={handleSubmit} isLoading={isLoading} initialData={existingProfile} />
+          <ProfileForm onSubmit={handleSubmit} isLoading={isLoading} initialData={existingProfile || undefined} />
 
           <div className="info-card" style={{ marginTop: 'var(--spacing-lg)' }}>
             <h3 style={{ 

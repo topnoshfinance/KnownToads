@@ -9,6 +9,7 @@ import {
   USDC_ADDRESS,
   getUniversalRouterQuote,
   getUniversalRouterSwapTransaction,
+  formatExchangeRate,
 } from '@/lib/universal-router-helpers';
 import { fetchTokenInfo } from '@/lib/token-helpers';
 
@@ -58,6 +59,7 @@ interface QuoteResult {
   amountOut: bigint;
   amountOutMinimum: bigint;
   slippageBps: number;
+  highSlippageWarning?: boolean;
 }
 
 export function SwapModal({
@@ -173,17 +175,15 @@ export function SwapModal({
         setSwapTxData(null);
         setShowSlippageWarning(false);
       } else {
+        const highSlippageWarning = slippageBps >= 1000;
         setQuote({
           amountOut: quoteResult.estimatedOut,
           amountOutMinimum: quoteResult.amountOutMinimum,
           slippageBps,
+          highSlippageWarning,
         });
         // Show high slippage warning if >= 10%
-        if (slippageBps >= 1000) {
-          setShowSlippageWarning(true);
-        } else {
-          setShowSlippageWarning(false);
-        }
+        setShowSlippageWarning(highSlippageWarning);
         setSwapTxData(null);
       }
     } catch (err) {
@@ -627,17 +627,6 @@ export function SwapModal({
                       fontWeight: quote.highSlippageWarning ? 'var(--font-semibold)' : 'normal',
                     }}>
                       <span style={{ fontWeight: 'var(--font-semibold)' }}>Slippage:</span> {getSlippageDisplay()}
-                    </div>
-                  )}
-                  
-                  {/* Price Impact Display */}
-                  {quote.priceImpact && (
-                    <div style={{ 
-                      fontSize: 'var(--text-xs)',
-                      color: 'var(--text-secondary)',
-                      marginTop: 'var(--spacing-xs)',
-                    }}>
-                      <span style={{ fontWeight: 'var(--font-semibold)' }}>Price Impact:</span> {quote.priceImpact}%
                     </div>
                   )}
                 </>
