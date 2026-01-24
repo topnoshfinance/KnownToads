@@ -1,11 +1,15 @@
 /**
  * Zora Coins SDK Integration
- * Uses @zoralabs/coins-sdk for all trading operations
+ * Uses @zoralabs/coins-sdk for trading Zora creator coins
+ * 
+ * Note: Zora Coins SDK is designed for trading coins with native ETH/currency,
+ * not ERC20 tokens like USDC. This implementation provides a wrapper that
+ * calculates slippage protection for the trades.
  */
 
-import { tradeCoin, setApiKey } from '@zoralabs/coins-sdk';
-import { Address, WalletClient, PublicClient, Account } from 'viem';
-import { USDC_ADDRESS, BASE_CHAIN_ID, SLIPPAGE_TIERS } from './swap-constants';
+import { tradeCoin, simulateBuy, setApiKey } from '@zoralabs/coins-sdk';
+import { Address, WalletClient, PublicClient } from 'viem';
+import { BASE_CHAIN_ID, SLIPPAGE_TIERS } from './swap-constants';
 
 // Set Zora API key if available
 if (process.env.ZORA_API_KEY) {
@@ -17,13 +21,12 @@ if (process.env.ZORA_API_KEY) {
 export type SlippageMode = 'auto' | 'manual';
 
 export interface TradeParams {
-  sellAmount: bigint; // USDC amount with 6 decimals
+  sellAmount: bigint; // Amount to spend (in wei for native currency)
   buyToken: Address; // Creator coin address
   userAddress: Address;
   slippageMode: SlippageMode;
   customSlippage?: number; // For manual mode (as decimal, e.g., 0.03 for 3%)
   walletClient: WalletClient;
-  account: Account;
   publicClient: PublicClient;
 }
 
@@ -41,28 +44,28 @@ export interface QuoteResult {
 }
 
 /**
- * Get a quote for trading USDC to creator coin
+ * Get a quote for buying a creator coin
  */
 export async function getTradeQuote(
-  sellAmount: bigint,
+  orderSize: bigint,
   buyToken: Address,
-  userAddress: Address,
-  slippage: number
+  publicClient: PublicClient
 ): Promise<QuoteResult | null> {
   try {
     console.log('[Zora Trade] Getting quote...', {
-      sellAmount: sellAmount.toString(),
+      orderSize: orderSize.toString(),
       buyToken,
-      slippage,
     });
 
-    // Note: The actual SDK might have a separate quote function
-    // For now, we'll use tradeCoin in a dry-run mode if available
-    // This is a placeholder - adjust based on actual SDK API
-    
+    const simulation = await simulateBuy({
+      target: buyToken,
+      requestedOrderSize: orderSize,
+      publicClient,
+    });
+
     return {
-      amountOut: 0n, // Will be populated by actual SDK call
-      slippageUsed: slippage,
+      amountOut: simulation.amountOut,
+      slippageUsed: 0, // Quote doesn't include slippage
     };
   } catch (error) {
     console.error('[Zora Trade] Quote error:', error);
@@ -83,7 +86,6 @@ export async function executeTrade(params: TradeParams): Promise<TradeResult> {
     slippageMode,
     customSlippage,
     walletClient,
-    account,
     publicClient,
   } = params;
 
@@ -107,24 +109,36 @@ export async function executeTrade(params: TradeParams): Promise<TradeResult> {
     try {
       console.log(`[Zora Trade] Attempt ${i + 1}/${slippagesToTry.length} with ${(slippage * 100).toFixed(1)}% slippage`);
 
-      // Execute trade using Zora SDK
-      const result = await tradeCoin({
-        chainId: BASE_CHAIN_ID,
-        sell: {
-          type: 'erc20' as const,
-          address: USDC_ADDRESS,
-        },
-        buy: {
-          type: 'erc20' as const,
-          address: buyToken,
-        },
-        amountIn: sellAmount,
-        slippage,
-        sender: userAddress,
-        walletClient,
-        account,
+      // First, simulate the buy to get expected output
+      const simulation = await simulateBuy({
+        target: buyToken,
+        requestedOrderSize: sellAmount,
         publicClient,
       });
+
+      // Calculate minimum amount out based on slippage
+      const minAmountOut = simulation.amountOut * BigInt(Math.floor((1 - slippage) * 10000)) / BigInt(10000);
+
+      console.log('[Zora Trade] Simulation:', {
+        expectedOut: simulation.amountOut.toString(),
+        minAmountOut: minAmountOut.toString(),
+        slippage: (slippage * 100).toFixed(1) + '%',
+      });
+
+      // Execute trade using Zora SDK
+      const result = await tradeCoin(
+        {
+          direction: 'buy', // We're buying the creator coin
+          target: buyToken, // The creator coin address
+          args: {
+            recipient: userAddress,
+            orderSize: sellAmount, // Amount we're spending
+            minAmountOut, // Minimum tokens to receive (with slippage protection)
+          },
+        },
+        walletClient,
+        publicClient
+      );
 
       console.log('[Zora Trade] Trade successful!', {
         slippage,
@@ -175,7 +189,7 @@ function extractErrorMessage(error: any): string {
     }
     
     if (message.includes('insufficient balance') || message.includes('insufficient funds')) {
-      return 'Insufficient USDC balance';
+      return 'Insufficient balance';
     }
     
     if (message.includes('slippage')) {

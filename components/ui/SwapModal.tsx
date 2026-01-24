@@ -182,7 +182,6 @@ export function SwapModal({
         slippageMode,
         customSlippage: slippage,
         walletClient,
-        account: walletClient.account,
         publicClient,
       });
 
@@ -418,7 +417,7 @@ export function SwapModal({
         )}
 
         {/* Input State */}
-        {(step === 'input' || step === 'approving' || step === 'swapping') && (
+        {(step === 'input' || step === 'swapping') && (
           <>
             {/* Wallet Status */}
             {!isConnected && (
