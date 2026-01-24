@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { WarningIcon } from '../ui/WarningIcon';
-import { fetchTokenSymbol } from '@/lib/token-helpers';
+import { fetchTokenSymbolWithRetry } from '@/lib/token-helpers';
 import type { Profile } from '@/types/profile';
 
 interface SocialLink {
@@ -39,6 +39,7 @@ export function SocialLinks({
   compactView = false, // Default to false for detail views
 }: SocialLinksProps) {
   const [tokenTicker, setTokenTicker] = useState<string | null>(null);
+  const [isLoadingTicker, setIsLoadingTicker] = useState(false);
   const [copied, setCopied] = useState(false);
   const links: SocialLink[] = [];
 
@@ -57,7 +58,8 @@ export function SocialLinks({
     if (contractAddress && !ticker) {
       // Validate contract address format before fetching
       if (contractAddress.startsWith('0x') && contractAddress.length === 42) {
-        fetchTokenSymbol(contractAddress as `0x${string}`)
+        setIsLoadingTicker(true);
+        fetchTokenSymbolWithRetry(contractAddress as `0x${string}`)
           .then(symbol => {
             if (symbol) {
               setTokenTicker(symbol);
@@ -65,6 +67,9 @@ export function SocialLinks({
           })
           .catch(err => {
             console.error('Error fetching token symbol:', err);
+          })
+          .finally(() => {
+            setIsLoadingTicker(false);
           });
       }
     }
@@ -110,7 +115,7 @@ export function SocialLinks({
   if (contractAddress) {
     links.push({
       platform: 'contract',
-      handle: ticker || 'TOKEN',
+      handle: isLoadingTicker ? '...' : (ticker || 'TOKEN'),
       url: contractAddress, // Will be used for copying
       valid: true,
     });
