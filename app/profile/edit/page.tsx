@@ -19,6 +19,8 @@ import {
   normalizeTelegramHandle,
   validateZoraUrl,
 } from '@/lib/validation';
+import { fetchTokenSymbol } from '@/lib/token-helpers';
+import type { Address } from 'viem';
 
 const PROFILE_REDIRECT_DELAY_MS = 3000;
 
@@ -129,6 +131,15 @@ export default function ProfileEditPage() {
         ? formData.x_handle.replace(/^@/, '')
         : null;
 
+      // Fetch token ticker/symbol from the contract
+      let tokenTicker: string | null = null;
+      try {
+        tokenTicker = await fetchTokenSymbol(formData.creator_coin_address as Address);
+      } catch (error) {
+        console.error('Error fetching token symbol:', error);
+        // Continue without token ticker - it can be fetched on demand
+      }
+
       // Save to Supabase
       const profileData = {
         fid: farcasterContext.fid,
@@ -141,6 +152,7 @@ export default function ProfileEditPage() {
         x_handle: cleanedXHandle,
         telegram_handle: normalizedTelegram,
         zora_page_url: formData.zora_page_url || null,
+        token_ticker: tokenTicker,
       };
 
       const { error: dbError } = await supabase

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useAccount, useWalletClient, usePublicClient, useReadContract } from 'wagmi';
 import { parseUnits, formatUnits, Address } from 'viem';
 import { base } from 'wagmi/chains';
@@ -71,6 +72,7 @@ export function SwapModal({
   const [isLoadingQuote, setIsLoadingQuote] = useState<boolean>(false);
   const [slippageMode, setSlippageMode] = useState<SlippageMode>(DEFAULT_SLIPPAGE_MODE);
   const [customSlippage, setCustomSlippage] = useState<number>(DEFAULT_CUSTOM_SLIPPAGE);
+  const [mounted, setMounted] = useState(false);
   
   // Token info state
   const [tokenInfo, setTokenInfo] = useState<{ symbol: string; decimals: number }>({
@@ -85,6 +87,12 @@ export function SwapModal({
   
   // Get account from wallet client
   const account = walletClient?.account;
+
+  // Set mounted state for portal
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
   
   // Get USDC balance
   const { data: usdcBalanceData } = useReadContract({
@@ -283,11 +291,11 @@ export function SwapModal({
     onClose();
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   const isProcessing = step === 'swapping';
 
-  return (
+  const modalContent = (
     <div
       className="swap-modal-overlay"
       style={{
@@ -734,4 +742,7 @@ export function SwapModal({
       </div>
     </div>
   );
+
+  // Use portal to render modal at document body level
+  return createPortal(modalContent, document.body);
 }
