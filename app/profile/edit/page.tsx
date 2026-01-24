@@ -134,7 +134,10 @@ export default function ProfileEditPage() {
       // Fetch token ticker/symbol from the contract
       let tokenTicker: string | null = null;
       try {
-        tokenTicker = await fetchTokenSymbol(formData.creator_coin_address as Address);
+        // Validate address format before fetching
+        if (formData.creator_coin_address.startsWith('0x') && formData.creator_coin_address.length === 42) {
+          tokenTicker = await fetchTokenSymbol(formData.creator_coin_address as Address);
+        }
       } catch (error) {
         console.error('Error fetching token symbol:', error);
         // Continue without token ticker - it can be fetched on demand

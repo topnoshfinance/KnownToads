@@ -91,7 +91,6 @@ export function SwapModal({
   // Set mounted state for portal
   useEffect(() => {
     setMounted(true);
-    return () => setMounted(false);
   }, []);
   
   // Get USDC balance
