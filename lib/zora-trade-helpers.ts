@@ -1,18 +1,13 @@
 /**
  * Zora Coins SDK Integration
- * Uses @zoralabs/coins-sdk for trading Zora creator coins
+ * Uses @zoralabs/coins-sdk v0.4.0 for trading Zora creator coins
  * 
- * NOTE: The installed SDK version (0.2.1) appears to use a different API than 
- * the documentation provided. The SDK's tradeCoin function is designed for 
- * buying/selling Zora coins with native currency (ETH), not ERC20 to ERC20 swaps.
- * 
- * This implementation uses the actual SDK API available in v0.2.1.
- * If USDC to Creator Coin swaps are needed, the SDK may need to be updated
- * or a different trading mechanism used.
+ * This implementation uses the new v0.4.x API which supports USDC to Creator Coin swaps
+ * via ERC20 to ERC20 trading with automatic permit signature handling.
  */
 
-import { tradeCoin, simulateBuy, setApiKey, TradeParams } from '@zoralabs/coins-sdk';
-import { Address, WalletClient, PublicClient, Account, parseUnits } from 'viem';
+import { tradeCoin, setApiKey, TradeParameters as SDKTradeParameters } from '@zoralabs/coins-sdk';
+import { Address, WalletClient, PublicClient, Account } from 'viem';
 import { USDC_ADDRESS, BASE_CHAIN_ID, SLIPPAGE_TIERS } from './swap-constants';
 
 // Set Zora API key if available
@@ -25,7 +20,7 @@ if (process.env.ZORA_API_KEY) {
 export type SlippageMode = 'auto' | 'manual';
 
 export interface TradeParameters {
-  sellAmount: bigint; // Amount in wei (for ETH) or base units (for USDC)
+  sellAmount: bigint; // Amount in base units (6 decimals for USDC)
   buyToken: Address; // Creator coin address
   userAddress: Address;
   slippageMode: SlippageMode;
@@ -53,7 +48,8 @@ export interface QuoteResult {
  * In auto mode: tries 3% → 5% → 8%
  * In manual mode: uses custom slippage only
  * 
- * Uses the SDK's tradeCoin function which buys Zora coins
+ * Uses the SDK's tradeCoin function which swaps USDC for Zora creator coins
+ * The SDK handles permit signatures automatically for USDC (no separate approval needed)
  */
 export async function executeTrade(params: TradeParameters): Promise<TradeResult> {
   const {
@@ -87,48 +83,45 @@ export async function executeTrade(params: TradeParameters): Promise<TradeResult
     try {
       console.log(`[Zora Trade] Attempt ${i + 1}/${slippagesToTry.length} with ${(slippage * 100).toFixed(1)}% slippage`);
 
-      // First, simulate the buy to get expected output
-      const simulation = await simulateBuy({
-        target: buyToken,
-        requestedOrderSize: sellAmount,
+      // Set up trade parameters for the new SDK API
+      const tradeParameters: SDKTradeParameters = {
+        sell: {
+          type: "erc20",
+          address: USDC_ADDRESS, // USDC on Base
+        },
+        buy: {
+          type: "erc20",
+          address: buyToken, // Creator Coin address
+        },
+        amountIn: sellAmount, // USDC amount (6 decimals)
+        slippage, // Slippage as decimal (e.g., 0.05 for 5%)
+        sender: userAddress,
+      };
+
+      console.log('[Zora Trade] Executing trade with parameters:', {
+        sellToken: USDC_ADDRESS,
+        buyToken,
+        amountIn: sellAmount.toString(),
+        slippage: (slippage * 100).toFixed(1) + '%',
+        sender: userAddress,
+      });
+
+      // Execute trade using Zora SDK (new v0.4.x API)
+      const receipt = await tradeCoin({
+        tradeParameters,
+        walletClient,
+        account,
         publicClient,
       });
 
-      // Calculate minimum amount out based on slippage
-      const minAmountOut = simulation.amountOut * BigInt(Math.floor((1 - slippage) * 10000)) / BigInt(10000);
-
-      console.log('[Zora Trade] Simulation:', {
-        expectedOut: simulation.amountOut.toString(),
-        minAmountOut: minAmountOut.toString(),
-        slippage: (slippage * 100).toFixed(1) + '%',
-      });
-
-      // Set up trade parameters for the SDK
-      const tradeParams: TradeParams = {
-        direction: 'buy', // We're buying the creator coin
-        target: buyToken, // The creator coin address
-        args: {
-          recipient: userAddress,
-          orderSize: sellAmount, // Amount we're spending
-          minAmountOut, // Minimum tokens to receive (with slippage protection)
-        },
-      };
-
-      // Execute trade using Zora SDK (3 parameter signature)
-      const result = await tradeCoin(
-        tradeParams,
-        walletClient,
-        publicClient
-      );
-
       console.log('[Zora Trade] Trade successful!', {
         slippage: (slippage * 100).toFixed(1) + '%',
-        txHash: result?.hash,
+        txHash: receipt?.transactionHash,
       });
 
       return {
         success: true,
-        txHash: result?.hash,
+        txHash: receipt?.transactionHash,
         slippageUsed: slippage,
       };
     } catch (error: any) {
