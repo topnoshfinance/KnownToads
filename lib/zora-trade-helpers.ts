@@ -94,7 +94,7 @@ export async function executeTrade(params: TradeParameters): Promise<TradeResult
           address: buyToken, // Creator Coin address
         },
         amountIn: sellAmount, // USDC amount (6 decimals)
-        slippage: slippage, // Slippage as decimal (e.g., 0.05 for 5%)
+        slippage, // Slippage as decimal (e.g., 0.05 for 5%)
         sender: userAddress,
       };
 
