@@ -1,9 +1,9 @@
 /**
  * @deprecated This file contains legacy Uniswap V4 direct PoolManager integration.
- * The application now uses Uniswap Universal Router exclusively.
+ * The application now uses Zora Coins SDK exclusively for all swaps.
  * This file should not be used in new code.
  * 
- * See: lib/universal-router-helpers.ts for the new implementation.
+ * See: lib/zora-trade-helpers.ts for the new implementation using @zoralabs/coins-sdk
  */
 
 import { Address, encodeFunctionData, parseUnits } from 'viem';

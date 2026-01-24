@@ -1,3 +1,11 @@
+/**
+ * @deprecated This file contains legacy Zora pool detection logic.
+ * The application now uses Zora Coins SDK exclusively for all swaps.
+ * This file should not be used in new code.
+ * 
+ * See: lib/zora-trade-helpers.ts for the new implementation using @zoralabs/coins-sdk
+ */
+
 import { Address } from 'viem';
 
 // Base chain ID

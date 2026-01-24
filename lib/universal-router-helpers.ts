@@ -1,3 +1,11 @@
+/**
+ * @deprecated This file contains legacy Universal Router integration.
+ * The application now uses Zora Coins SDK exclusively for all swaps.
+ * This file should not be used in new code.
+ * 
+ * See: lib/zora-trade-helpers.ts for the new implementation using @zoralabs/coins-sdk
+ */
+
 import { Address, encodeFunctionData, encodeAbiParameters, parseAbiParameters, formatUnits } from 'viem';
 import { getV4Quote, PoolKey } from './v4-quoter-helpers';
 import { detectPoolsWithZoraFallback } from './pool-detection-helpers';
