@@ -108,7 +108,7 @@ export async function fetchTokenInfo(tokenAddress: Address): Promise<{
 
 /**
  * Fetch token symbol with retry logic and caching
- * Tries up to 3 times with exponential backoff (500ms, 1000ms, 1500ms delays)
+ * Tries up to 3 times with increasing delays (500ms, 1000ms, 1500ms)
  * Returns the symbol on first success or null after all retries fail
  * @param tokenAddress - ERC-20 token contract address
  * @param retries - Number of retry attempts (default: 3)
@@ -129,11 +129,12 @@ export async function fetchTokenSymbolWithRetry(
     try {
       const symbol = await fetchTokenSymbol(tokenAddress);
       if (symbol) {
-        // Cache successful result
+        // Update cache with symbol, preserving existing data if available
+        const existingCache = tokenMetadataCache.get(cacheKey);
         tokenMetadataCache.set(cacheKey, {
-          name: '',
+          name: existingCache?.name || '',
           symbol,
-          decimals: 18,
+          decimals: existingCache?.decimals || 18,
           cachedAt: Date.now(),
         });
         return symbol;
