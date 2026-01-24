@@ -2,14 +2,18 @@
  * Zora Coins SDK Integration
  * Uses @zoralabs/coins-sdk for trading Zora creator coins
  * 
- * Note: Zora Coins SDK is designed for trading coins with native ETH/currency,
- * not ERC20 tokens like USDC. This implementation provides a wrapper that
- * calculates slippage protection for the trades.
+ * NOTE: The installed SDK version (0.2.1) appears to use a different API than 
+ * the documentation provided. The SDK's tradeCoin function is designed for 
+ * buying/selling Zora coins with native currency (ETH), not ERC20 to ERC20 swaps.
+ * 
+ * This implementation uses the actual SDK API available in v0.2.1.
+ * If USDC to Creator Coin swaps are needed, the SDK may need to be updated
+ * or a different trading mechanism used.
  */
 
-import { tradeCoin, simulateBuy, setApiKey } from '@zoralabs/coins-sdk';
-import { Address, WalletClient, PublicClient } from 'viem';
-import { BASE_CHAIN_ID, SLIPPAGE_TIERS } from './swap-constants';
+import { tradeCoin, simulateBuy, setApiKey, TradeParams } from '@zoralabs/coins-sdk';
+import { Address, WalletClient, PublicClient, Account, parseUnits } from 'viem';
+import { USDC_ADDRESS, BASE_CHAIN_ID, SLIPPAGE_TIERS } from './swap-constants';
 
 // Set Zora API key if available
 if (process.env.ZORA_API_KEY) {
@@ -20,13 +24,14 @@ if (process.env.ZORA_API_KEY) {
 
 export type SlippageMode = 'auto' | 'manual';
 
-export interface TradeParams {
-  sellAmount: bigint; // Amount to spend (in wei for native currency)
+export interface TradeParameters {
+  sellAmount: bigint; // Amount in wei (for ETH) or base units (for USDC)
   buyToken: Address; // Creator coin address
   userAddress: Address;
   slippageMode: SlippageMode;
-  customSlippage?: number; // For manual mode (as decimal, e.g., 0.03 for 3%)
+  customSlippage?: number; // For manual mode (as percentage, e.g., 3 for 3%)
   walletClient: WalletClient;
+  account: Account;
   publicClient: PublicClient;
 }
 
@@ -44,41 +49,13 @@ export interface QuoteResult {
 }
 
 /**
- * Get a quote for buying a creator coin
- */
-export async function getTradeQuote(
-  orderSize: bigint,
-  buyToken: Address,
-  publicClient: PublicClient
-): Promise<QuoteResult | null> {
-  try {
-    console.log('[Zora Trade] Getting quote...', {
-      orderSize: orderSize.toString(),
-      buyToken,
-    });
-
-    const simulation = await simulateBuy({
-      target: buyToken,
-      requestedOrderSize: orderSize,
-      publicClient,
-    });
-
-    return {
-      amountOut: simulation.amountOut,
-      slippageUsed: 0, // Quote doesn't include slippage
-    };
-  } catch (error) {
-    console.error('[Zora Trade] Quote error:', error);
-    return null;
-  }
-}
-
-/**
  * Execute a trade using Zora SDK with progressive slippage fallback
  * In auto mode: tries 3% → 5% → 8%
  * In manual mode: uses custom slippage only
+ * 
+ * Uses the SDK's tradeCoin function which buys Zora coins
  */
-export async function executeTrade(params: TradeParams): Promise<TradeResult> {
+export async function executeTrade(params: TradeParameters): Promise<TradeResult> {
   const {
     sellAmount,
     buyToken,
@@ -86,6 +63,7 @@ export async function executeTrade(params: TradeParams): Promise<TradeResult> {
     slippageMode,
     customSlippage,
     walletClient,
+    account,
     publicClient,
   } = params;
 
@@ -93,11 +71,11 @@ export async function executeTrade(params: TradeParams): Promise<TradeResult> {
   const slippagesToTry: number[] = 
     slippageMode === 'auto' 
       ? [...SLIPPAGE_TIERS] 
-      : [customSlippage || SLIPPAGE_TIERS[0]];
+      : [customSlippage ? customSlippage / 100 : SLIPPAGE_TIERS[0]]; // Convert percentage to decimal
 
   console.log('[Zora Trade] Starting trade execution', {
     mode: slippageMode,
-    slippages: slippagesToTry,
+    slippages: slippagesToTry.map(s => `${(s * 100).toFixed(1)}%`),
     sellAmount: sellAmount.toString(),
   });
 
@@ -125,23 +103,26 @@ export async function executeTrade(params: TradeParams): Promise<TradeResult> {
         slippage: (slippage * 100).toFixed(1) + '%',
       });
 
-      // Execute trade using Zora SDK
-      const result = await tradeCoin(
-        {
-          direction: 'buy', // We're buying the creator coin
-          target: buyToken, // The creator coin address
-          args: {
-            recipient: userAddress,
-            orderSize: sellAmount, // Amount we're spending
-            minAmountOut, // Minimum tokens to receive (with slippage protection)
-          },
+      // Set up trade parameters for the SDK
+      const tradeParams: TradeParams = {
+        direction: 'buy', // We're buying the creator coin
+        target: buyToken, // The creator coin address
+        args: {
+          recipient: userAddress,
+          orderSize: sellAmount, // Amount we're spending
+          minAmountOut, // Minimum tokens to receive (with slippage protection)
         },
+      };
+
+      // Execute trade using Zora SDK (3 parameter signature)
+      const result = await tradeCoin(
+        tradeParams,
         walletClient,
         publicClient
       );
 
       console.log('[Zora Trade] Trade successful!', {
-        slippage,
+        slippage: (slippage * 100).toFixed(1) + '%',
         txHash: result?.hash,
       });
 
@@ -189,10 +170,10 @@ function extractErrorMessage(error: any): string {
     }
     
     if (message.includes('insufficient balance') || message.includes('insufficient funds')) {
-      return 'Insufficient balance';
+      return 'Insufficient USDC balance';
     }
     
-    if (message.includes('slippage')) {
+    if (message.includes('slippage') || message.includes('price')) {
       return 'Price moved too much. Please try again with higher slippage.';
     }
     
@@ -230,5 +211,6 @@ export function getSlippageDisplay(mode: SlippageMode, customSlippage?: number):
     return `Auto (${formatSlippage(SLIPPAGE_TIERS[0])} → ${formatSlippage(SLIPPAGE_TIERS[1])} → ${formatSlippage(SLIPPAGE_TIERS[2])})`;
   }
   
-  return formatSlippage((customSlippage || SLIPPAGE_TIERS[0]) / 100);
+  // customSlippage is already a percentage (3 for 3%), so just format it
+  return `${(customSlippage || (SLIPPAGE_TIERS[0] * 100)).toFixed(1)}%`;
 }

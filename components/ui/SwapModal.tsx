@@ -83,6 +83,9 @@ export function SwapModal({
   const { data: walletClient } = useWalletClient();
   const publicClient = usePublicClient();
   
+  // Get account from wallet client
+  const account = walletClient?.account;
+  
   // Get USDC balance
   const { data: usdcBalanceData } = useReadContract({
     address: USDC_ADDRESS,
@@ -163,13 +166,14 @@ export function SwapModal({
       if (!userAddress) throw new Error('No wallet connected');
       if (!walletClient) throw new Error('Wallet client not available');
       if (!publicClient) throw new Error('Public client not available');
+      if (!account) throw new Error('Account not available');
       
       setError(null);
       setStep('swapping');
       
       const amountIn = parseUnits(amount, 6); // USDC has 6 decimals
 
-      // Get slippage value based on mode
+      // Get slippage value based on mode (customSlippage is in percentage, needs to be decimal)
       const slippage = slippageMode === 'manual' 
         ? customSlippage / 100 // Convert percentage to decimal
         : undefined; // Let executeTrade use auto mode
@@ -180,8 +184,9 @@ export function SwapModal({
         buyToken: tokenAddress as Address,
         userAddress,
         slippageMode,
-        customSlippage: slippage,
+        customSlippage,
         walletClient,
+        account,
         publicClient,
       });
 
@@ -196,7 +201,7 @@ export function SwapModal({
       setError(err instanceof Error ? err.message : 'Failed to execute swap');
       setStep('error');
     }
-  }, [userAddress, amount, tokenAddress, slippageMode, customSlippage, walletClient, publicClient]);
+  }, [userAddress, amount, tokenAddress, slippageMode, customSlippage, walletClient, account, publicClient]);
 
   // Fetch token info when modal opens
   useEffect(() => {
