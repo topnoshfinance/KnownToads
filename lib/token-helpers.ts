@@ -70,6 +70,7 @@ export async function fetchTokenSymbol(tokenAddress: Address): Promise<string | 
     const symbol = response.data?.zora20Token?.symbol;
     if (symbol) {
       // Cache the result
+      // Note: Zora coins are standard ERC-20 tokens with 18 decimals
       tokenMetadataCache.set(cacheKey, {
         name: response.data?.zora20Token?.name || '',
         symbol,
@@ -85,17 +86,24 @@ export async function fetchTokenSymbol(tokenAddress: Address): Promise<string | 
   // Fallback to RPC for non-Zora tokens
   try {
     const client = getBasePublicClient();
-    const symbol = await client.readContract({
-      address: tokenAddress,
-      abi: ERC20_ABI,
-      functionName: 'symbol',
-    });
+    const [symbol, decimals] = await Promise.all([
+      client.readContract({
+        address: tokenAddress,
+        abi: ERC20_ABI,
+        functionName: 'symbol',
+      }),
+      client.readContract({
+        address: tokenAddress,
+        abi: ERC20_ABI,
+        functionName: 'decimals',
+      }).catch(() => 18), // Default to 18 if decimals() fails
+    ]);
     
     if (symbol) {
       tokenMetadataCache.set(cacheKey, {
         name: '',
         symbol: symbol as string,
-        decimals: 18,
+        decimals: Number(decimals) || 18,
         cachedAt: Date.now(),
       });
     }
@@ -314,7 +322,7 @@ export async function getTokenMetadata(tokenAddress: Address): Promise<TokenMeta
       return {
         name: coin.name || '',
         symbol: coin.symbol || '',
-        decimals: 18, // Zora coins use 18 decimals
+        decimals: 18, // Zora coins are standard ERC-20 tokens with 18 decimals
         description: coin.description || undefined,
         totalSupply: coin.totalSupply || undefined,
         volume24h: coin.volume24h || undefined,
