@@ -44,6 +44,18 @@ export interface QuoteResult {
 }
 
 /**
+ * Zora API quote request body type
+ */
+interface ZoraQuoteRequest {
+  inputToken: Address;
+  outputToken: Address;
+  amount: string;
+  chain: number;
+  slippage: number;
+  userAddress?: Address;
+}
+
+/**
  * Zora API quote response type
  */
 interface ZoraQuoteResponse {
@@ -62,7 +74,6 @@ interface ZoraQuoteResponse {
  * @param sellToken - Token to sell (typically USDC)
  * @param buyToken - Token to buy (creator coin)
  * @param sellAmount - Amount to sell in base units
- * @param chain - Chain ID (default: Base mainnet)
  * @param userAddress - User's wallet address (optional)
  * @returns Quote with amountOut or null if error
  */
@@ -70,7 +81,6 @@ export async function getZoraSDKQuote(
   sellToken: Address,
   buyToken: Address,
   sellAmount: bigint,
-  chain: number = BASE_CHAIN_ID,
   userAddress?: Address
 ): Promise<{ amountOut: bigint } | null> {
   try {
@@ -86,7 +96,7 @@ export async function getZoraSDKQuote(
     }
 
     // Prepare request body for Zora's /quote endpoint
-    const requestBody: any = {
+    const requestBody: ZoraQuoteRequest = {
       inputToken: sellToken,
       outputToken: buyToken,
       amount: sellAmount.toString(),
