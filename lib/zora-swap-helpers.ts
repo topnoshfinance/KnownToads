@@ -1,9 +1,6 @@
 /**
- * @deprecated This file contains legacy Zora swap integration.
- * The application now uses Zora Coins SDK exclusively for all swaps.
- * This file should not be used in new code.
- * 
- * See: lib/zora-trade-helpers.ts for the new implementation using @zoralabs/coins-sdk
+ * Zora API swap integration
+ * Uses Zora REST API for fetching quotes
  */
 
 import { Address } from 'viem';
@@ -47,14 +44,21 @@ export async function getZoraQuote(
   takerAddress: Address
 ): Promise<ZoraSwapQuote | null> {
   try {
-    // Prepare request body for Zora's /quote endpoint
+    // Prepare request body for Zora's /quote endpoint (correct schema from Zora SDK)
     const requestBody = {
-      inputToken: sellToken,
-      outputToken: buyToken,
-      amount: sellAmount.toString(),
-      chain: BASE_CHAIN_ID,
-      userAddress: takerAddress,
-      slippage: ZORA_FALLBACK_SLIPPAGE_DECIMAL,
+      tokenIn: {
+        type: "erc20",
+        address: sellToken,
+      },
+      tokenOut: {
+        type: "erc20",
+        address: buyToken,
+      },
+      amountIn: sellAmount.toString(),
+      chainId: BASE_CHAIN_ID,
+      sender: takerAddress,
+      recipient: takerAddress,
+      slippage: 0.05, // 5% default
     };
 
     const apiKey = process.env.ZORA_API_KEY;
@@ -71,7 +75,7 @@ export async function getZoraQuote(
       url: `${ZORA_API_BASE_URL}/quote`,
       method: 'POST',
       body: requestBody,
-      slippageUsed: `${ZORA_FALLBACK_SLIPPAGE_BPS} bps (${(ZORA_FALLBACK_SLIPPAGE_BPS / 100).toFixed(1)}%)`,
+      slippageUsed: `5% (0.05)`,
     });
 
     const response = await fetch(
