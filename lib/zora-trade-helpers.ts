@@ -71,7 +71,9 @@ export async function getZoraSDKQuote(
       ...(userAddress && { takerAddress: userAddress }),
     });
 
-    const headers: HeadersInit = {};
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
     
     if (apiKey) {
       headers['0x-api-key'] = apiKey;
@@ -80,7 +82,7 @@ export async function getZoraSDKQuote(
     console.log('[0x Quote] Fetching quote:', { sellToken, buyToken, sellAmount: sellAmount.toString() });
 
     const response = await fetch(
-      `https://api.0x.org/swap/allowance-holder/quote?${params.toString()}`,
+      `https://api.0x.org/swap/v1/quote?${params.toString()}`,
       { headers }
     );
 
