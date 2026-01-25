@@ -64,16 +64,14 @@ export async function getZoraSDKQuote(
     const apiKey = process.env.ZEROX_API_KEY || process.env.NEXT_PUBLIC_ZEROX_API_KEY;
     
     const params = new URLSearchParams({
-      chainId: '8453', // Base
+      chainId: BASE_CHAIN_ID.toString(),
       sellToken: sellToken,
       buyToken: buyToken,
       sellAmount: sellAmount.toString(),
       ...(userAddress && { takerAddress: userAddress }),
     });
 
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
+    const headers: HeadersInit = {};
     
     if (apiKey) {
       headers['0x-api-key'] = apiKey;
