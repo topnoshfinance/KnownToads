@@ -10,6 +10,7 @@ import { Loading } from '@/components/ui/Loading';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { ShareButton } from '@/components/ShareButton';
+import { BuyAllModal } from '@/components/ui/BuyAllModal';
 
 export default function HomePage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -17,6 +18,7 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'newest' | 'alphabetical'>('newest');
   const [loading, setLoading] = useState(true);
+  const [isBuyAllModalOpen, setIsBuyAllModalOpen] = useState(false);
 
   useEffect(() => {
     fetchProfiles();
@@ -93,6 +95,9 @@ export default function HomePage() {
             justifyContent: 'center',
             flexWrap: 'wrap',
           }}>
+            <Button onClick={() => setIsBuyAllModalOpen(true)}>
+              🐸 Buy All Coins
+            </Button>
             <Link href="/profile/edit">
               <Button>Join the Gang</Button>
             </Link>
@@ -138,6 +143,13 @@ export default function HomePage() {
 
         {/* Profiles Grid */}
         {!loading && <ToadGrid profiles={filteredProfiles} />}
+
+        {/* Buy All Modal */}
+        <BuyAllModal
+          isOpen={isBuyAllModalOpen}
+          onClose={() => setIsBuyAllModalOpen(false)}
+          profiles={profiles}
+        />
 
         {/* Footer */}
         <div style={{ 
