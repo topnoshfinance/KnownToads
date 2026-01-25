@@ -36,21 +36,24 @@ export function getValidCoins(profiles: Profile[]): Array<{ address: string; use
   const validCoins: Array<{ address: string; username: string; symbol: string }> = [];
 
   for (const profile of profiles) {
-    const address = profile.creator_coin_address?.toLowerCase();
+    const address = profile.creator_coin_address;
     
     // Skip if no address or invalid
     if (!address || address === '' || address === '0x0000000000000000000000000000000000000000') {
       continue;
     }
 
+    // Normalize to lowercase for deduplication
+    const normalizedAddress = address.toLowerCase();
+    
     // Skip duplicates
-    if (seen.has(address)) {
+    if (seen.has(normalizedAddress)) {
       continue;
     }
 
-    seen.add(address);
+    seen.add(normalizedAddress);
     validCoins.push({
-      address: profile.creator_coin_address,
+      address: address, // Use original casing from profile
       username: profile.username,
       symbol: profile.token_ticker || profile.username,
     });
