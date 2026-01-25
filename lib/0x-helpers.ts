@@ -134,7 +134,7 @@ export async function get0xQuote(
       }
 
       const response = await fetch(
-        `${ZEROX_API_BASE_URL}/swap/v1/quote?${params.toString()}`,
+        `${ZEROX_API_BASE_URL}/swap/allowance-holder/quote?${params.toString()}`,
         { headers }
       );
 
@@ -247,7 +247,7 @@ export async function get0xSwapTransaction(
       }
 
       const response = await fetch(
-        `${ZEROX_API_BASE_URL}/swap/v1/quote?${params.toString()}`,
+        `${ZEROX_API_BASE_URL}/swap/allowance-holder/quote?${params.toString()}`,
         { headers }
       );
 
