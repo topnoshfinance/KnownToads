@@ -96,10 +96,16 @@ export async function checkFollowerStatus(
  * Verifies that a user follows @toadgod1017
  */
 export async function verifyToadgodFollower(fid: number): Promise<boolean> {
-  const toadgodFid = process.env.TOADGOD_FID ? parseInt(process.env.TOADGOD_FID) : TOADGOD_FID;
-  if (isNaN(toadgodFid)) {
-    console.error('TOADGOD_FID not configured or invalid');
-    return false;
+  let toadgodFid = TOADGOD_FID; // Default to constant
+  
+  // Override with environment variable if set
+  if (process.env.TOADGOD_FID) {
+    const parsedFid = parseInt(process.env.TOADGOD_FID);
+    if (isNaN(parsedFid)) {
+      console.error('TOADGOD_FID environment variable is invalid:', process.env.TOADGOD_FID);
+      return false;
+    }
+    toadgodFid = parsedFid;
   }
   
   return await checkFollowerStatus(fid, toadgodFid);
