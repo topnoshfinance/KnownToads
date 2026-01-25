@@ -147,8 +147,8 @@ The swap system implements an intelligent 4-layer routing strategy to maximize s
 NEXT_PUBLIC_SUPABASE_URL=         # Supabase project URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY=    # Supabase anon key
 SUPABASE_SERVICE_ROLE_KEY=        # Supabase service role key
-FARCASTER_API_KEY=                # Farcaster API key (optional)
-TOADGOD_FID=                      # FID of @toadgod1017
+NEYNAR_API_KEY=                   # Neynar API key for Farcaster integration
+TOADGOD_FID=482739                # FID of @toadgod1017
 BASE_RPC_URL=                     # Base RPC URL (default: https://mainnet.base.org)
 NEXT_PUBLIC_BASE_CHAIN_ID=        # Chain ID (default: 8453)
 NEXT_PUBLIC_APP_URL=              # App URL for production

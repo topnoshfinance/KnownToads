@@ -60,8 +60,8 @@ A Farcaster mini app that serves as a community directory where toadgang members
    - `NEXT_PUBLIC_SUPABASE_URL` - Your Supabase project URL
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anon key
    - `SUPABASE_SERVICE_ROLE_KEY` - Your Supabase service role key
-   - `FARCASTER_API_KEY` - Your Farcaster API key (from Warpcast)
-   - `TOADGOD_FID` - The FID of @toadgod1017
+   - `NEYNAR_API_KEY` - Your Neynar API key for Farcaster integration
+   - `TOADGOD_FID` - The FID of @toadgod1017 (482739)
    - `BASE_RPC_URL` - Base RPC endpoint (default: https://mainnet.base.org)
    - `ZEROX_API_KEY` - 0x API key (optional, for higher rate limits)
    - `ZORA_API_KEY` - Zora API key for creator coin swaps (get from https://zora.co/developers)
