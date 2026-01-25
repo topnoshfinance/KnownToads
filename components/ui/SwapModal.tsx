@@ -7,7 +7,6 @@ import { parseUnits, formatUnits, Address } from 'viem';
 import { base } from 'wagmi/chains';
 import { USDC_ADDRESS, SLIPPAGE_TIERS, DEFAULT_SLIPPAGE_MODE, DEFAULT_CUSTOM_SLIPPAGE } from '@/lib/swap-constants';
 import { executeTrade, SlippageMode, formatSlippage, getSlippageDisplay } from '@/lib/zora-trade-helpers';
-import { getZoraQuote } from '@/lib/zora-swap-helpers';
 import { fetchTokenInfo } from '@/lib/token-helpers';
 
 // ERC-20 ABI for approve function
@@ -145,13 +144,28 @@ export function SwapModal({
 
       const amountIn = parseUnits(amount, 6); // USDC has 6 decimals
       
-      // Fetch real quote from Zora API
-      const quoteResult = await getZoraQuote(
-        USDC_ADDRESS,
-        tokenAddress as Address,
-        amountIn,
-        userAddress
-      );
+      // Fetch real quote from Zora API via our API route
+      const response = await fetch('/api/quote', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sellToken: USDC_ADDRESS,
+          buyToken: tokenAddress,
+          sellAmount: amountIn.toString(),
+          takerAddress: userAddress,
+        }),
+      });
+
+      if (!response.ok) {
+        // API error - set to null without throwing
+        setQuote(null);
+        return;
+      }
+
+      const data = await response.json();
+      const quoteResult = data.quote;
       
       if (!quoteResult) {
         // Quote failed - set to null without throwing
