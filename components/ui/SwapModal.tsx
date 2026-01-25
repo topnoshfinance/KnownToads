@@ -6,7 +6,7 @@ import { useAccount, useWalletClient, usePublicClient, useReadContract } from 'w
 import { parseUnits, formatUnits, Address } from 'viem';
 import { base } from 'wagmi/chains';
 import { USDC_ADDRESS, SLIPPAGE_TIERS, DEFAULT_SLIPPAGE_MODE, DEFAULT_CUSTOM_SLIPPAGE } from '@/lib/swap-constants';
-import { executeTrade, SlippageMode, formatSlippage, getSlippageDisplay } from '@/lib/zora-trade-helpers';
+import { executeTrade, SlippageMode, formatSlippage, getSlippageDisplay, getZoraSDKQuote } from '@/lib/zora-trade-helpers';
 import { fetchTokenInfo } from '@/lib/token-helpers';
 
 // ERC-20 ABI for approve function
@@ -144,19 +144,22 @@ export function SwapModal({
 
       const amountIn = parseUnits(amount, 6); // USDC has 6 decimals
       
-      // Note: Zora SDK doesn't provide a separate quote function
-      // We'll provide an estimate based on typical outputs
-      // The actual amount will be determined during execution with slippage protection
+      // Fetch real quote from Zora API
+      const quoteResult = await getZoraSDKQuote(
+        USDC_ADDRESS,
+        tokenAddress as Address,
+        amountIn,
+        chainId
+      );
       
-      // For now, we'll show a placeholder - actual SDK may have quote endpoint
-      // This is a simplified version - in production, you may want to call
-      // a quote endpoint if the SDK provides one
+      if (!quoteResult) {
+        throw new Error('Unable to fetch quote from Zora API');
+      }
       
-      const estimatedOut = amountIn * BigInt(1000) / BigInt(1); // Placeholder ratio
-      const exchangeRate = calculateExchangeRate(amountIn, estimatedOut);
+      const exchangeRate = calculateExchangeRate(amountIn, quoteResult.amountOut);
       
       setQuote({
-        amountOut: estimatedOut,
+        amountOut: quoteResult.amountOut,
         exchangeRate,
       });
     } catch (err) {
@@ -166,7 +169,7 @@ export function SwapModal({
     } finally {
       setIsLoadingQuote(false);
     }
-  }, [userAddress, amount, tokenAddress, tokenInfo.decimals]);
+  }, [userAddress, amount, tokenAddress, chainId, tokenInfo.decimals]);
 
   const executeSwap = useCallback(async () => {
     try {
