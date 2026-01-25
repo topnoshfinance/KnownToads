@@ -17,6 +17,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate sellAmount is a valid numeric string
+    if (isNaN(Number(sellAmount)) || Number(sellAmount) <= 0) {
+      return NextResponse.json(
+        { error: 'Invalid sellAmount: must be a positive number' },
+        { status: 400 }
+      );
+    }
+
     // Build request body matching Zora API schema
     const requestBody = {
       tokenIn: {
@@ -36,15 +44,19 @@ export async function POST(request: NextRequest) {
 
     // Server-side: ZORA_API_KEY is available here
     const apiKey = process.env.ZORA_API_KEY;
+    
+    if (!apiKey) {
+      console.error('[Quote API] ZORA_API_KEY not set in environment variables');
+      return NextResponse.json(
+        { error: 'Server configuration error: API key not configured' },
+        { status: 500 }
+      );
+    }
+
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
+      'api-key': apiKey,
     };
-    
-    if (apiKey) {
-      headers['api-key'] = apiKey;
-    } else {
-      console.warn('[Quote API] ZORA_API_KEY not set in environment variables');
-    }
 
     console.log('[Quote API] Fetching quote from Zora:', {
       sellToken,

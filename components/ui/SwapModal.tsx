@@ -159,7 +159,11 @@ export function SwapModal({
       });
 
       if (!response.ok) {
-        // API error - set to null without throwing
+        // API error - log and set to null without throwing
+        console.error('[SwapModal] Quote API error:', {
+          status: response.status,
+          statusText: response.statusText,
+        });
         setQuote(null);
         return;
       }
