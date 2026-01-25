@@ -71,7 +71,9 @@ export async function getZoraSDKQuote(
       ...(userAddress && { takerAddress: userAddress }),
     });
 
-    const headers: HeadersInit = {};
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
     
     if (apiKey) {
       headers['0x-api-key'] = apiKey;
