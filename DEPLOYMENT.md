@@ -79,8 +79,8 @@ In Vercel Dashboard:
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
-FARCASTER_API_KEY=your_farcaster_api_key (optional)
-TOADGOD_FID=12345
+NEYNAR_API_KEY=your_neynar_api_key
+TOADGOD_FID=482739
 BASE_RPC_URL=https://mainnet.base.org
 NEXT_PUBLIC_BASE_CHAIN_ID=8453
 NEXT_PUBLIC_APP_URL=https://your-domain.vercel.app
