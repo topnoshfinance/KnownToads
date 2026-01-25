@@ -9,9 +9,8 @@ import { Address } from 'viem';
 const ZORA_API_BASE_URL = 'https://api-sdk.zora.engineering';
 const BASE_CHAIN_ID = 8453;
 
-// Aggressive slippage for Zora fallback (20%)
-const ZORA_FALLBACK_SLIPPAGE_BPS = 2000; // 20%
-const ZORA_FALLBACK_SLIPPAGE_DECIMAL = ZORA_FALLBACK_SLIPPAGE_BPS / 10000; // Convert to 0.20
+// Default slippage for Zora API quotes (5%)
+const ZORA_QUOTE_SLIPPAGE = 0.05;
 
 /**
  * Zora API swap quote response type
@@ -58,7 +57,7 @@ export async function getZoraQuote(
       chainId: BASE_CHAIN_ID,
       sender: takerAddress,
       recipient: takerAddress,
-      slippage: 0.05, // 5% default
+      slippage: ZORA_QUOTE_SLIPPAGE,
     };
 
     const apiKey = process.env.ZORA_API_KEY;
@@ -75,7 +74,7 @@ export async function getZoraQuote(
       url: `${ZORA_API_BASE_URL}/quote`,
       method: 'POST',
       body: requestBody,
-      slippageUsed: `5% (0.05)`,
+      slippageUsed: `${(ZORA_QUOTE_SLIPPAGE * 100).toFixed(1)}%`,
     });
 
     const response = await fetch(
