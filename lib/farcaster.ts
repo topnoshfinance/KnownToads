@@ -3,6 +3,12 @@ import { FarcasterUser } from '@/types/profile';
 const NEYNAR_API_BASE = 'https://api.neynar.com/v2/farcaster';
 
 /**
+ * @toadgod1017 FID
+ * This is the Farcaster ID for @toadgod1017 used for follow verification
+ */
+const TOADGOD_FID = '482739';
+
+/**
  * Fetches a Farcaster user by FID using Neynar API
  */
 export async function getFarcasterUser(fid: number): Promise<FarcasterUser | null> {
@@ -78,11 +84,9 @@ export async function checkFollowerStatus(
 
 /**
  * Verifies that a user follows @toadgod1017
- * @toadgod1017 FID: 482739
  */
 export async function verifyToadgodFollower(fid: number): Promise<boolean> {
-  // @toadgod1017 FID is 482739
-  const toadgodFid = parseInt(process.env.TOADGOD_FID || '482739');
+  const toadgodFid = parseInt(process.env.TOADGOD_FID || TOADGOD_FID);
   if (isNaN(toadgodFid)) {
     console.error('TOADGOD_FID not configured or invalid');
     return false;
