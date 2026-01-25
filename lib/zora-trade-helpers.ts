@@ -63,13 +63,15 @@ interface ZoraQuoteResponse {
  * @param buyToken - Token to buy (creator coin)
  * @param sellAmount - Amount to sell in base units
  * @param chain - Chain ID (default: Base mainnet)
+ * @param userAddress - User's wallet address (optional)
  * @returns Quote with amountOut or null if error
  */
 export async function getZoraSDKQuote(
   sellToken: Address,
   buyToken: Address,
   sellAmount: bigint,
-  chain: number = BASE_CHAIN_ID
+  chain: number = BASE_CHAIN_ID,
+  userAddress?: Address
 ): Promise<{ amountOut: bigint } | null> {
   try {
     // Get API key from environment
@@ -84,12 +86,18 @@ export async function getZoraSDKQuote(
     }
 
     // Prepare request body for Zora's /quote endpoint
-    const requestBody = {
-      fromToken: sellToken,
-      toToken: buyToken,
-      amountIn: sellAmount.toString(),
-      chain,
+    const requestBody: any = {
+      inputToken: sellToken,
+      outputToken: buyToken,
+      amount: sellAmount.toString(),
+      chain: BASE_CHAIN_ID,
+      slippage: 0.20, // 20% slippage for shallow liquidity pools
     };
+
+    // Add userAddress if provided
+    if (userAddress) {
+      requestBody.userAddress = userAddress;
+    }
 
     console.log('[Zora Quote] Fetching quote:', requestBody);
 

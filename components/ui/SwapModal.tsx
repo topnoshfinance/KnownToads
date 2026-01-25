@@ -149,7 +149,8 @@ export function SwapModal({
         USDC_ADDRESS,
         tokenAddress as Address,
         amountIn,
-        chainId
+        chainId,
+        userAddress
       );
       
       if (!quoteResult) {
