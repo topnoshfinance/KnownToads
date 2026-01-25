@@ -1,5 +1,6 @@
 import { Address, createPublicClient, http } from 'viem';
 import { base } from 'viem/chains';
+import { getCoin } from '@zoralabs/coins-sdk';
 
 // ERC-20 ABI for symbol, decimals, and name functions
 const ERC20_ABI = [
@@ -47,11 +48,41 @@ function getBasePublicClient() {
 }
 
 /**
- * Fetch the ERC-20 token symbol from contract
+ * Fetch the ERC-20 token symbol using Zora SDK with RPC fallback
  * @param tokenAddress - ERC-20 token contract address
  * @returns Token symbol or null if not available
  */
 export async function fetchTokenSymbol(tokenAddress: Address): Promise<string | null> {
+  // Check cache first
+  const cacheKey = tokenAddress.toLowerCase();
+  const cached = tokenMetadataCache.get(cacheKey);
+  if (cached && Date.now() - cached.cachedAt < CACHE_TTL_MS) {
+    return cached.symbol || null;
+  }
+
+  try {
+    // Try Zora SDK first (for Zora coins)
+    const response = await getCoin({
+      address: tokenAddress,
+      chain: base.id,
+    });
+    
+    const symbol = response.data?.zora20Token?.symbol;
+    if (symbol) {
+      // Cache the result
+      tokenMetadataCache.set(cacheKey, {
+        name: response.data?.zora20Token?.name || '',
+        symbol,
+        decimals: 18,
+        cachedAt: Date.now(),
+      });
+      return symbol;
+    }
+  } catch (error) {
+    console.log('[Token] Not a Zora coin or API error, trying RPC fallback');
+  }
+
+  // Fallback to RPC for non-Zora tokens
   try {
     const client = getBasePublicClient();
     const symbol = await client.readContract({
@@ -59,9 +90,18 @@ export async function fetchTokenSymbol(tokenAddress: Address): Promise<string | 
       abi: ERC20_ABI,
       functionName: 'symbol',
     });
-    return symbol as string;
+    
+    if (symbol) {
+      tokenMetadataCache.set(cacheKey, {
+        name: '',
+        symbol: symbol as string,
+        decimals: 18,
+        cachedAt: Date.now(),
+      });
+    }
+    return (symbol as string) || null;
   } catch (error) {
-    console.error('Error fetching token symbol:', error);
+    console.error('[Token] RPC fallback also failed:', error);
     return null;
   }
 }
@@ -118,25 +158,10 @@ export async function fetchTokenSymbolWithRetry(
   tokenAddress: Address,
   retries = 3
 ): Promise<string | null> {
-  // Check cache first
-  const cacheKey = tokenAddress.toLowerCase();
-  const cached = tokenMetadataCache.get(cacheKey);
-  if (cached && Date.now() - cached.cachedAt < CACHE_TTL_MS) {
-    return cached.symbol || null;
-  }
-
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       const symbol = await fetchTokenSymbol(tokenAddress);
       if (symbol) {
-        // Update cache with symbol, preserving existing data if available
-        const existingCache = tokenMetadataCache.get(cacheKey);
-        tokenMetadataCache.set(cacheKey, {
-          name: existingCache?.name || '',
-          symbol,
-          decimals: existingCache?.decimals || 18,
-          cachedAt: Date.now(),
-        });
         return symbol;
       }
     } catch (error) {
@@ -255,4 +280,82 @@ export async function getTokenName(tokenAddress: Address): Promise<string> {
 
   // Ultimate fallback
   return 'Token';
+}
+
+/**
+ * Token metadata interface
+ */
+export interface TokenMetadata {
+  name: string;
+  symbol: string;
+  decimals: number;
+  description?: string;
+  totalSupply?: string;
+  marketCap?: string;
+  volume24h?: string;
+  creatorAddress?: string;
+}
+
+/**
+ * Get complete token metadata using Zora SDK with RPC fallback
+ * @param tokenAddress - ERC-20 token contract address
+ * @returns Token metadata or null if not available
+ */
+export async function getTokenMetadata(tokenAddress: Address): Promise<TokenMetadata | null> {
+  try {
+    // Try Zora SDK first (for Zora coins)
+    const response = await getCoin({
+      address: tokenAddress,
+      chain: base.id,
+    });
+    
+    const coin = response.data?.zora20Token;
+    if (coin) {
+      return {
+        name: coin.name || '',
+        symbol: coin.symbol || '',
+        decimals: 18, // Zora coins use 18 decimals
+        description: coin.description || undefined,
+        totalSupply: coin.totalSupply || undefined,
+        volume24h: coin.volume24h || undefined,
+        creatorAddress: coin.creatorAddress || undefined,
+      };
+    }
+  } catch (error) {
+    console.log('[Token] Not a Zora coin or API error, trying RPC fallback');
+  }
+
+  // Fallback to RPC for non-Zora tokens
+  try {
+    const client = getBasePublicClient();
+    const [symbol, name, decimals] = await Promise.all([
+      client.readContract({
+        address: tokenAddress,
+        abi: ERC20_ABI,
+        functionName: 'symbol',
+      }).catch(() => ''),
+      client.readContract({
+        address: tokenAddress,
+        abi: ERC20_ABI,
+        functionName: 'name',
+      }).catch(() => ''),
+      client.readContract({
+        address: tokenAddress,
+        abi: ERC20_ABI,
+        functionName: 'decimals',
+      }).catch(() => 18),
+    ]);
+    
+    if (symbol || name) {
+      return {
+        name: (name as string) || '',
+        symbol: (symbol as string) || '',
+        decimals: Number(decimals) || 18,
+      };
+    }
+  } catch (error) {
+    console.error('[Token] Error fetching metadata from RPC:', error);
+  }
+
+  return null;
 }
