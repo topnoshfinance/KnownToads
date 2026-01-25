@@ -44,6 +44,91 @@ export interface QuoteResult {
 }
 
 /**
+ * Zora API quote response type
+ */
+interface ZoraQuoteResponse {
+  amountOut: string;
+  amountIn: string;
+  sellToken: string;
+  buyToken: string;
+  chainId: number;
+  // ... other fields may exist but we only need amountOut
+}
+
+/**
+ * Get a price quote from Zora API
+ * Fetches real-time price data for USDC to creator coin swaps
+ * 
+ * @param sellToken - Token to sell (typically USDC)
+ * @param buyToken - Token to buy (creator coin)
+ * @param sellAmount - Amount to sell in base units
+ * @param chain - Chain ID (default: Base mainnet)
+ * @returns Quote with amountOut or null if error
+ */
+export async function getZoraSDKQuote(
+  sellToken: Address,
+  buyToken: Address,
+  sellAmount: bigint,
+  chain: number = BASE_CHAIN_ID
+): Promise<{ amountOut: bigint } | null> {
+  try {
+    // Get API key from environment
+    const apiKey = process.env.ZORA_API_KEY || process.env.NEXT_PUBLIC_ZORA_API_KEY;
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (apiKey) {
+      headers['api-key'] = apiKey;
+    }
+
+    // Prepare request body for Zora's /quote endpoint
+    const requestBody = {
+      fromToken: sellToken,
+      toToken: buyToken,
+      amountIn: sellAmount.toString(),
+      chain,
+    };
+
+    console.log('[Zora Quote] Fetching quote:', requestBody);
+
+    const response = await fetch(
+      'https://api-sdk.zora.engineering/quote',
+      {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[Zora Quote] API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText,
+      });
+      return null;
+    }
+
+    const quote: ZoraQuoteResponse = await response.json();
+    
+    console.log('[Zora Quote] Successful response:', {
+      amountIn: quote.amountIn,
+      amountOut: quote.amountOut,
+    });
+    
+    return {
+      amountOut: BigInt(quote.amountOut),
+    };
+  } catch (error) {
+    console.error('[Zora Quote] Error fetching quote:', error);
+    return null;
+  }
+}
+
+/**
  * Execute a trade using Zora SDK with progressive slippage fallback
  * In auto mode: tries 3% → 5% → 8%
  * In manual mode: uses custom slippage only
