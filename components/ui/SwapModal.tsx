@@ -6,7 +6,8 @@ import { useAccount, useWalletClient, usePublicClient, useReadContract } from 'w
 import { parseUnits, formatUnits, Address } from 'viem';
 import { base } from 'wagmi/chains';
 import { USDC_ADDRESS, SLIPPAGE_TIERS, DEFAULT_SLIPPAGE_MODE, DEFAULT_CUSTOM_SLIPPAGE } from '@/lib/swap-constants';
-import { executeTrade, SlippageMode, formatSlippage, getSlippageDisplay, getZoraSDKQuote } from '@/lib/zora-trade-helpers';
+import { executeTrade, SlippageMode, formatSlippage, getSlippageDisplay } from '@/lib/zora-trade-helpers';
+import { getZoraQuote } from '@/lib/zora-swap-helpers';
 import { fetchTokenInfo } from '@/lib/token-helpers';
 
 // ERC-20 ABI for approve function
@@ -145,7 +146,7 @@ export function SwapModal({
       const amountIn = parseUnits(amount, 6); // USDC has 6 decimals
       
       // Fetch real quote from Zora API
-      const quoteResult = await getZoraSDKQuote(
+      const quoteResult = await getZoraQuote(
         USDC_ADDRESS,
         tokenAddress as Address,
         amountIn,
@@ -153,18 +154,20 @@ export function SwapModal({
       );
       
       if (!quoteResult) {
-        throw new Error('Unable to fetch quote from Zora API');
+        // Quote failed - set to null without throwing
+        setQuote(null);
+        return;
       }
       
-      const exchangeRate = calculateExchangeRate(amountIn, quoteResult.amountOut);
+      const exchangeRate = calculateExchangeRate(amountIn, BigInt(quoteResult.buyAmount));
       
       setQuote({
-        amountOut: quoteResult.amountOut,
+        amountOut: BigInt(quoteResult.buyAmount),
         exchangeRate,
       });
     } catch (err) {
       console.error('Quote error:', err);
-      setError('Unable to fetch quote. The token may not be tradeable.');
+      // Set quote to null without showing error
       setQuote(null);
     } finally {
       setIsLoadingQuote(false);
@@ -240,12 +243,17 @@ export function SwapModal({
       return;
     }
 
+    // Wait for token info before fetching quote
+    if (isLoadingTokenInfo) {
+      return;
+    }
+
     const timer = setTimeout(() => {
       fetchQuote();
     }, 500); // Debounce for 500ms
 
     return () => clearTimeout(timer);
-  }, [amount, isConnected, chain?.id, fetchQuote]);
+  }, [amount, isConnected, chain?.id, isLoadingTokenInfo, fetchQuote]);
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -664,7 +672,18 @@ export function SwapModal({
                   fontWeight: 'var(--font-semibold)',
                   color: 'var(--deep-blue)',
                 }}>
-                  {tokenInfo.symbol}
+                  ≈ ? {tokenInfo.symbol}
+                </div>
+              )}
+              
+              {!isLoadingQuote && !isLoadingTokenInfo && !quote && (
+                <div style={{ 
+                  fontSize: 'var(--text-xs)',
+                  color: 'var(--text-secondary)',
+                  marginTop: 'var(--spacing-xs)',
+                  fontStyle: 'italic',
+                }}>
+                  Estimated output unavailable
                 </div>
               )}
               
@@ -724,9 +743,9 @@ export function SwapModal({
                 onClick={handleSwap}
                 className="btn-primary"
                 style={{ flex: 1 }}
-                disabled={isProcessing || !isConnected || isLoadingQuote}
+                disabled={isProcessing || !isConnected}
               >
-                {isProcessing ? 'Processing...' : isLoadingQuote ? 'Loading...' : 'Swap'}
+                {isProcessing ? 'Processing...' : 'Swap'}
               </button>
             </div>
 
