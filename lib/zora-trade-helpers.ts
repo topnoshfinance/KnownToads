@@ -44,32 +44,9 @@ export interface QuoteResult {
 }
 
 /**
- * Zora API quote request body type
- */
-interface ZoraQuoteRequest {
-  inputToken: Address;
-  outputToken: Address;
-  amount: string;
-  chain: number;
-  slippage: number;
-  userAddress?: Address;
-}
-
-/**
- * Zora API quote response type
- */
-interface ZoraQuoteResponse {
-  amountOut: string;
-  amountIn: string;
-  sellToken: string;
-  buyToken: string;
-  chainId: number;
-  // ... other fields may exist but we only need amountOut
-}
-
-/**
- * Get a price quote from Zora API
- * Fetches real-time price data for USDC to creator coin swaps
+ * Get a price quote from 0x API
+ * Uses 0x Swap API to fetch real-time price data for USDC to creator coin swaps
+ * The 0x API aggregates liquidity from Uniswap V4 pools where creator coins trade
  * 
  * @param sellToken - Token to sell (typically USDC)
  * @param buyToken - Token to buy (creator coin)
@@ -84,45 +61,34 @@ export async function getZoraSDKQuote(
   userAddress?: Address
 ): Promise<{ amountOut: bigint } | null> {
   try {
-    // Get API key from environment
-    const apiKey = process.env.ZORA_API_KEY || process.env.NEXT_PUBLIC_ZORA_API_KEY;
+    const apiKey = process.env.ZEROX_API_KEY || process.env.NEXT_PUBLIC_ZEROX_API_KEY;
     
+    const params = new URLSearchParams({
+      chainId: '8453', // Base
+      sellToken: sellToken,
+      buyToken: buyToken,
+      sellAmount: sellAmount.toString(),
+      ...(userAddress && { takerAddress: userAddress }),
+    });
+
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };
     
     if (apiKey) {
-      headers['api-key'] = apiKey;
+      headers['0x-api-key'] = apiKey;
     }
 
-    // Prepare request body for Zora's /quote endpoint
-    const requestBody: ZoraQuoteRequest = {
-      inputToken: sellToken,
-      outputToken: buyToken,
-      amount: sellAmount.toString(),
-      chain: BASE_CHAIN_ID,
-      slippage: 0.20, // 20% slippage for shallow liquidity pools
-    };
-
-    // Add userAddress if provided
-    if (userAddress) {
-      requestBody.userAddress = userAddress;
-    }
-
-    console.log('[Zora Quote] Fetching quote:', requestBody);
+    console.log('[0x Quote] Fetching quote:', { sellToken, buyToken, sellAmount: sellAmount.toString() });
 
     const response = await fetch(
-      'https://api-sdk.zora.engineering/quote',
-      {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(requestBody),
-      }
+      `https://api.0x.org/swap/allowance-holder/quote?${params.toString()}`,
+      { headers }
     );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[Zora Quote] API error:', {
+      console.error('[0x Quote] API error:', {
         status: response.status,
         statusText: response.statusText,
         body: errorText,
@@ -130,18 +96,18 @@ export async function getZoraSDKQuote(
       return null;
     }
 
-    const quote: ZoraQuoteResponse = await response.json();
+    const quote = await response.json();
     
-    console.log('[Zora Quote] Successful response:', {
-      amountIn: quote.amountIn,
-      amountOut: quote.amountOut,
+    console.log('[0x Quote] Successful response:', {
+      buyAmount: quote.buyAmount,
+      sellAmount: quote.sellAmount,
     });
     
     return {
-      amountOut: BigInt(quote.amountOut),
+      amountOut: BigInt(quote.buyAmount),
     };
   } catch (error) {
-    console.error('[Zora Quote] Error fetching quote:', error);
+    console.error('[0x Quote] Error fetching quote:', error);
     return null;
   }
 }
