@@ -96,7 +96,7 @@ export async function checkFollowerStatus(
  * Verifies that a user follows @toadgod1017
  */
 export async function verifyToadgodFollower(fid: number): Promise<boolean> {
-  const toadgodFid = parseInt(process.env.TOADGOD_FID || String(TOADGOD_FID));
+  const toadgodFid = process.env.TOADGOD_FID ? parseInt(process.env.TOADGOD_FID) : TOADGOD_FID;
   if (isNaN(toadgodFid)) {
     console.error('TOADGOD_FID not configured or invalid');
     return false;
