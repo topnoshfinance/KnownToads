@@ -6,16 +6,21 @@ const NEYNAR_API_BASE = 'https://api.neynar.com/v2/farcaster';
  * @toadgod1017 FID
  * This is the Farcaster ID for @toadgod1017 used for follow verification
  */
-const TOADGOD_FID = '482739';
+const TOADGOD_FID = 482739;
 
 /**
  * Fetches a Farcaster user by FID using Neynar API
  */
 export async function getFarcasterUser(fid: number): Promise<FarcasterUser | null> {
   try {
+    if (!process.env.NEYNAR_API_KEY) {
+      console.error('NEYNAR_API_KEY not configured');
+      return null;
+    }
+
     const response = await fetch(`${NEYNAR_API_BASE}/user/bulk?fids=${fid}`, {
       headers: {
-        'api_key': process.env.NEYNAR_API_KEY || '',
+        'api_key': process.env.NEYNAR_API_KEY,
       },
     });
 
@@ -53,12 +58,17 @@ export async function checkFollowerStatus(
   followedFid: number
 ): Promise<boolean> {
   try {
+    if (!process.env.NEYNAR_API_KEY) {
+      console.error('NEYNAR_API_KEY not configured');
+      return false;
+    }
+
     // Use Neynar's user/bulk endpoint with viewer_fid to check if follower follows the target user
     const response = await fetch(
       `${NEYNAR_API_BASE}/user/bulk?fids=${followedFid}&viewer_fid=${followerFid}`,
       {
         headers: {
-          'api_key': process.env.NEYNAR_API_KEY || '',
+          'api_key': process.env.NEYNAR_API_KEY,
         },
       }
     );
@@ -86,7 +96,7 @@ export async function checkFollowerStatus(
  * Verifies that a user follows @toadgod1017
  */
 export async function verifyToadgodFollower(fid: number): Promise<boolean> {
-  const toadgodFid = parseInt(process.env.TOADGOD_FID || TOADGOD_FID);
+  const toadgodFid = parseInt(process.env.TOADGOD_FID || String(TOADGOD_FID));
   if (isNaN(toadgodFid)) {
     console.error('TOADGOD_FID not configured or invalid');
     return false;
