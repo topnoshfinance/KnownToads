@@ -83,8 +83,8 @@ export async function checkFollowerStatus(
 export async function verifyToadgodFollower(fid: number): Promise<boolean> {
   // @toadgod1017 FID is 482739
   const toadgodFid = parseInt(process.env.TOADGOD_FID || '482739');
-  if (!toadgodFid) {
-    console.error('TOADGOD_FID not configured');
+  if (isNaN(toadgodFid)) {
+    console.error('TOADGOD_FID not configured or invalid');
     return false;
   }
   
